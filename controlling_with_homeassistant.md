@@ -240,3 +240,16 @@ action:
       limit: "{{ states('input_number.inverter_power_limit') | int }}"
 mode: single
 ```
+
+### Impressions
+After a day letting the automation do it's work this looks like this (Dashboards are in Grafana as I export timeseries data from Homeassistant):
+<img width="1534" alt="image" src="https://github.com/reinhard-brandstaedter/solarflow/assets/10830223/c64938d7-9103-46e8-a56e-238b36226839">
+
+<img width="1343" alt="image" src="https://github.com/reinhard-brandstaedter/solarflow/assets/10830223/5f88e690-25f0-4238-98d8-c15273f2d3f9">
+
+The power consumption measured on my house' smartmeter is a rather flat line, slightly above 0, where possible. Only during midday (kitchen on!) I'm daring from the grid,
+although the automation increased the limit to the max to leverage the sun as much as possible. Note that at this time it's also drawing from the battery, which gave me
+an idea to also factor that in an eventually limit how much it is allowed to drain from the battery during the day (e.g. allow a max of 75W added from the battery - see Issue #1) 
+
+
+
