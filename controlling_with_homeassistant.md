@@ -1,3 +1,5 @@
+*UPDATE:* my initial attempt to just getting stats into Homeassistant vie DNS forging, turned out to be not as practical. After 24hrs this setup stopped working properly. I have now a more "official" way to get data into HA.
+
 ## SolarFlow's Limitation
 
 Unfortunately Zendure's Solarflow is rather limited when it comes to controlling various aspects of the system.
@@ -16,7 +18,7 @@ In an attempt to workaround some of the limitations above I came up with a solut
 My solution might not be perfect and I'm still testing the practical aspects of it.
 What you will need:
 
-- DNS server/Forwarder in you local LAN where you can add custom records (e.g. pi-hole)
+- A Zendure developer account, [please see here how to create one](https://github.com/Zendure/developer-device-data-report)
 - Local MQTT broker (standalone or from Homeassistant/HA) - e.g. mosquitto MQTT
 - Micro-inverter where you can set the input limit via API
 - Homeassistant configured to use your MQTT broker
@@ -26,108 +28,44 @@ What you will need:
 ### Basics
 
 Solarflow reports device metrics such as firmware, serial numbers, states and also current power stats via MQTT to a service run by Zendure hosted
-on AWS in Hongkong. The DNS name a SolarFlow tries to connect and send MQTT data to is mq.zen-iot.com.
-Likely the SF-Hub uses a MQTT user/password to connect and post messages/telemetry there, which is then used by the App to display stats.
-You can also register a [developer account](https://github.com/Zendure/developer-device-data-report) to get access to the MQTT broker.
-The problem with that is that you cannot get full access to it and that I'm not a fan of sending data around the globe (with potential tracking) for
-an IoT device that I just want to use locally.
-So first step is to get SF-Hub to report to my MQTT broker
+on AWS in Hongkong. This MQTT service is used to exchange data between your device and Zendure, it is also used for timesync, update checking, etc.
+With a Zendure developer account you can subscribe to a MQTT service to get your SolarFlow's metrics (not control it) into your own local MQTT broker.
+This is called a bridge setup. Basically you subscribe your broker to the Zendure broker and listen to topics which you will then publish locally.
+
+To do so you will need a Zendure Developer Account (see above), which grant you login and access to your data.
 
 ### Local MQTT broker
-I do have a local MQTT Broker for my Homeassistant setup, so to get the SF-Hub to send it's messages there I just need to point mq.zen-iot.com to my
-local broker. Since I can not configure that within SF-Hub (feature request!) I need to add a local DNS record to resolve Zendures MQTT host to my MQTT host.
-I'm using pi-hole to filter adds in my LAN for all devices, so that is the place to create a custom DNS entry.
+I'm using [mosquitto MQTT](https://mosquitto.org/) so first thing after getting the developer account is to subscribe to the remote broker and brindge my topics locally. To do so ypou will need to add these lines to your ```mosquitto.conf```:
 
 ```
-% nslookup mq.zen-iot.com
-Server:		192.168.1.253
-Address:	192.168.1.253#53
-
-Name:	mq.zen-iot.com
-Address: 192.168.1.245
+...
+connection external-bridge
+address mqtt.zen-iot.com:1883
+remote_username <Your Zendure Developer AppKey>
+remote_password <Your Zendure Developer Secret>
+clientid <AppKey>
+topic <AppKey>/<device ID>/# both 0
+topic # in 0 homeassistant/sensor/<AppKey>/ <AppKey>/sensor/device/
+...
 ```
 
-Once that is in place SF will send it's messages to my MQTT server. Note that SF-Hub also uses the default mqtt port 1883 so your server needs to listen on that port also.
-Additionally since the SF-Hub hopefully uses a user/password for MQTT, you will need to disable user/password authentication on your MQTT server (allow any).
-Make sure your MQTT is protected in other forms. Maybe the SF-Hubs user/password can be sniffed and you could create the same user/credentials on your server.
+To get your ```device ID``` you will first need to connect to the Zendure MQTT broker, you will see it as part of the topic of your SolarFlow.
+In the above configuration we are doing two things:
 
-Eventually you need to restart the SF-Hub to clear any DNS caches, and after some time you should see MQTT messages from your SF-Hub.
-Using MQTT Explorer I could see the topics posted by my SF-Hub. The topic used contains the unique device IDs:
+- login with your account so you only see your device
+- mapping of sensor config topic into the right place so that homeassistant can automatically create the sensors (no manual config needed anymore) via MQTT
 
-<img width="683" alt="image" src="https://github.com/reinhard-brandstaedter/solarflow/assets/10830223/9d576ca0-96de-4620-a887-aa5c6cfc776a">
+Once you have restarted your MQTT broker you should be seeing topics coming in from Zendure for your SolarFlow:
+
+<img width="1231" alt="Screenshot 2023-07-16 at 14 57 45" src="https://github.com/reinhard-brandstaedter/solarflow/assets/10830223/bfc24b57-e226-415d-84c0-53ec75f448e4">
+
+Note that the sensor configuration topics are mapped correctly into the ```homassistant/sensor``` topic. This allows HA to automatically create those sensors for you.
 
 ### Getting Data into Homeassistant
-To get the stats into Homeassistant we will need to create a couple of custom sensors in HA configuration.yaml file. For the beginning I was just browsing MQTT messages
-to look for what seems to be interesting. I've added these sensors (not perfect but works as a PoC):
-
-```
-mqtt:
-  sensor:
-    - name: SolarFlow - solarInputPower                                                                                                                                                                                         
-      unique_id: "solarInputPower"                                                                                                                                                                                              
-      state_topic: /73bkTV/5ak8yGU7/properties/report                                                                                                                                                                           
-      value_template: "{{ value_json.properties.solarInputPower }}"                                                                                                                                                             
-      unit_of_measurement: "W"                                                                                                                                                                                                  
-      device_class: power                                                                                                                                                                                                       
-      state_class: measurement                                                                                                                                                                                                  
-                                                                                                                                                                                                                                
-    - name: SolarFlow - solarInputPowerCycle                                                                                                                                                                                    
-      unique_id: "solarInputPowerCycle"                                                                                                                                                                                         
-      state_topic: /73bkTV/5ak8yGU7/properties/report                                                                                                                                                                           
-      value_template: "{{ value_json.properties.solarInputPowerCycle }}"                                                                                                                                                        
-      unit_of_measurement: "W"                                                                                                                                                                                                  
-      device_class: energy                                                                                                                                                                                                      
-                                                                                                                                                                                                                                
-    - name: SolarFlow - outputPackPower                                                                                                                                                                                         
-      unique_id: "outputPackPower"                                                                                                                                                                                              
-      state_topic: /73bkTV/5ak8yGU7/properties/report                                                                                                                                                                           
-      value_template: "{{ value_json.properties.outputPackPower }}"                                                                                                                                                             
-      unit_of_measurement: "W"                                                                                                                                                                                                  
-      device_class: power                                                                                                                                                                                                       
-      state_class: measurement                                                                                                                                                                                                  
-                                                                                                                                                                                                                                
-    - name: SolarFlow - packInputPower                                                                                                                                                                                          
-      unique_id: "packInputPower"                                                                                                                                                                                               
-      state_topic: /73bkTV/5ak8yGU7/properties/report                                                                                                                                                                           
-      value_template: "{{ value_json.properties.packInputPower }}"                                                                                                                                                              
-      unit_of_measurement: "W"                                                                                                                                                                                                  
-      device_class: power                                                                                                                                                                                                       
-      state_class: measurement                                                                                                                                                                                                  
-                                                                                                                                                                                                                                
-    - name: SolarFlow - outputHomePower                                                                                                                                                                                         
-      unique_id: "outputHomePower"                                                                                                                                                                                              
-      state_topic: /73bkTV/5ak8yGU7/properties/report                                                                                                                                                                           
-      value_template: "{{ value_json.properties.outputHomePower }}"                                                                                                                                                             
-      unit_of_measurement: "W"                                                                                                                                                                                                  
-      device_class: power                                                                                                                                                                                                       
-      state_class: measurement                                                                                                                                                                                                  
-                                                                                                                                                                                                                                
-    - name: SolarFlow - outputPackPowerCycle                                                                                                                                                                                    
-      unique_id: "outputPackPowerCycle"                                                                                                                                                                                         
-      state_topic: /73bkTV/5ak8yGU7/properties/report                                                                                                                                                                           
-      value_template: "{{ value_json.properties.outputPackPowerCycle }}"                                                                                                                                                        
-      unit_of_measurement: "W"                                                                                                                                                                                                  
-                                                                                                                                                                                                                                
-    - name: SolarFlow - battery socLevel                                                                                                                                                                                        
-      unique_id: "socLevel"                                                                                                                                                                                                     
-      state_topic: /73bkTV/5ak8yGU7/properties/report                                                                                                                                                                           
-      value_template: "{{ value_json.packData[0].socLevel }}"                                                                                                                                                                   
-      unit_of_measurement: "%"                                                                                                                                                                                                  
-      device_class: battery                                                                                                                                                                                                     
-      state_class: measurement                                                                                                                                                                                                  
-                                                                                                                                                                                                                                
-    - name: SolarFlow - battery maxTemp                                                                                                                                                                                         
-      unique_id: "maxTemp"                                                                                                                                                                                                      
-      state_topic: /73bkTV/5ak8yGU7/properties/report                                                                                                                                                                           
-      value_template: "{{ value_json.packData[0].maxTemp | int / 100 | round(1) }}"                                                                                                                                             
-      unit_of_measurement: "°C"
-```
-
-Note: you will eventually see some warnings in the Homeassistant logs as the MQTT messages not always contain all datapoints.
-
 After some time you will see the first data coming into Homeassistant:
 
-<img width="985" alt="image" src="https://github.com/reinhard-brandstaedter/solarflow/assets/10830223/1ac2d5af-8e7e-4ba5-8e63-5cc0790456f2">
+<img width="501" alt="image" src="https://github.com/reinhard-brandstaedter/solarflow/assets/10830223/71822f52-598f-485c-b1bf-b9def96be86a">
+
 
 ### Using the Data for Automation
 The last part is to use the now available data for some smart automation in Homeassistant. Here comes the API access to the micro-inverter into play.
