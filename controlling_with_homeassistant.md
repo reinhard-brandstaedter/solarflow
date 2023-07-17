@@ -44,7 +44,7 @@ address mqtt.zen-iot.com:1883
 remote_username <Your Zendure Developer AppKey>
 remote_password <Your Zendure Developer Secret>
 clientid <AppKey>
-topic <AppKey>/<device ID>/# both 0
+topic <AppKey>/<device ID>/# in 0
 topic # in 0 homeassistant/sensor/<AppKey>/ <AppKey>/sensor/device/
 ...
 ```
