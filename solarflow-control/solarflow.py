@@ -167,7 +167,7 @@ def run():
     subscribe(client)
     client.loop_start()
     while True:
-        time.sleep(5)
+        time.sleep(10)
         steerInverter()
 
 if __name__ == '__main__':
