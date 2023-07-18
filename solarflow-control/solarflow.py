@@ -12,16 +12,18 @@ topic_acinput = "inverter/HM-600/ch0/P_AC"
 topic_solarflow = "SKC4SpSn/5ak8yGU7/state"
 client_id = f'subscribe-{random.randint(0, 100)}'
 
+# sliding average windows for telemetry data, to remove spikes and drops
 solarflow_values = []
 sf_window = 5
 smartmeter_values = []
 sm_window = 10
 inverter_values = []
 inv_window = 5
+
 battery = -1
-MIN_CHARGE_LEVEL = 125
-MAX_DISCHARGE_LEVEL = 150
-OVERAGE_LIMIT = 10              # if we produce more than what we need we can give away
+MIN_CHARGE_LEVEL = 125          # The amount of power that should be always reserved for charging, if available. Nothing will be fed to the house if less is produced
+MAX_DISCHARGE_LEVEL = 150       # The maximum discharge level of the battery. Even if there is more demand it will not go beyond that
+OVERAGE_LIMIT = 10              # if we produce more than what we need we can feed that much to the grid
 last_limit = 0                  # just record the last limit to avoid too many calls to inverter API
 
 
