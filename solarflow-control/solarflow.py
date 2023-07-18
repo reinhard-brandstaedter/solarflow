@@ -3,6 +3,8 @@ from functools import reduce
 from paho.mqtt import client as mqtt_client
 
 
+# our MQTT broker where we subscribe to all the telemetry data we need to steer
+# could also be an external one, e.g. fetching SolarFlow data directly from their dv-server
 broker = '192.168.1.245'
 port = 1883
 topic_house = "tele/E220/SENSOR"
