@@ -1,0 +1,156 @@
+alias: Adapt Inverter Limit for SF
+description: ""
+trigger:
+  - platform: time_pattern
+    seconds: /30
+condition: null
+action:
+  - variables:
+      current_demand: >-
+        {{ (states('sensor.e220_power_power_curr')|int +
+        states('sensor.hm_600_p_ac')|int(0)) | int }}
+      day_discharge_limit: 0
+      night_discharge_limit: 150
+      minimum_charge: 125
+  - if:
+      - condition: numeric_state
+        entity_id: sensor.electriclevel
+        above: 95
+    then:
+      - choose:
+          - conditions:
+              - condition: numeric_state
+                entity_id: sensor.solarinputpower
+                above: 0
+            sequence:
+              - if:
+                  - condition: template
+                    value_template: >-
+                      {{ states('sensor.solarinputpower')|int > current_demand
+                      }}
+                then:
+                  - service: input_number.set_value
+                    data:
+                      value: "{{ current_demand }}"
+                    target:
+                      entity_id: input_number.inverter_power_limit
+                else:
+                  - service: input_number.set_value
+                    data:
+                      value: "{{ states('sensor.solarinputpower')|int }}"
+                    target:
+                      entity_id: input_number.inverter_power_limit
+              - service: rest_command.set_inverter_power_limit
+                data:
+                  limit: "{{ states('input_number.inverter_power_limit') | int }}"
+          - conditions:
+              - condition: numeric_state
+                entity_id: sensor.solarinputpower
+                below: 1
+            sequence:
+              - if:
+                  - condition: template
+                    value_template: "{{ current_demand > night_discharge_limit }}"
+                then:
+                  - service: input_number.set_value
+                    data:
+                      value: "{{ night_discharge_limit }}"
+                    target:
+                      entity_id: input_number.inverter_power_limit
+                else:
+                  - service: input_number.set_value
+                    data:
+                      value: "{{ current_demand }}"
+                    target:
+                      entity_id: input_number.inverter_power_limit
+              - service: rest_command.set_inverter_power_limit
+                data:
+                  limit: "{{ states('input_number.inverter_power_limit') | int }}"
+    else:
+      - choose:
+          - conditions:
+              - condition: numeric_state
+                entity_id: sensor.solarinputpower
+                above: 0
+            sequence:
+              - service: logbook.log
+                data:
+                  name: "Battery should be charging: "
+                  message: >-
+                    Current demand: {{ current_demand }}, Solar input: {{
+                    states('sensor.solarinputpower') }}, Inverter limit: {{
+                    states('input_number.inverter_power_limit') }}, Inverter
+                    input: {{ states('sensor.hm_600_p_ac') }}
+              - if:
+                  - condition: template
+                    value_template: >-
+                      {{ states('sensor.solarinputpower')|int > minimum_charge
+                      and current_demand < (states('sensor.solarinputpower')|int
+                      - minimum_charge)|int }}
+                then:
+                  - service: input_number.set_value
+                    data:
+                      value: "{{ current_demand }}"
+                    target:
+                      entity_id: input_number.inverter_power_limit
+                else:
+                  - if:
+                      - condition: template
+                        value_template: >-
+                          {{ current_demand >
+                          (states('sensor.solarinputpower')|int -
+                          minimum_charge)|int }}
+                    then:
+                      - service: input_number.set_value
+                        data:
+                          value: >-
+                            {{ (current_demand -
+                            states('sensor.solarinputpower')|int -
+                            minimum_charge|int) | int }}
+                        target:
+                          entity_id: input_number.inverter_power_limit
+                  - if:
+                      - condition: template
+                        value_template: >-
+                          {{ states('sensor.solarinputpower')|int <
+                          minimum_charge }}
+                    then:
+                      - service: input_number.set_value
+                        data:
+                          value: 0
+                        target:
+                          entity_id: input_number.inverter_power_limit
+              - service: rest_command.set_inverter_power_limit
+                data:
+                  limit: "{{ states('input_number.inverter_power_limit') | int }}"
+              - delay: "00:01:00"
+          - conditions:
+              - condition: numeric_state
+                entity_id: sensor.solarinputpower
+                below: 1
+            sequence:
+              - if:
+                  - condition: template
+                    value_template: "{{ current_demand > night_discharge_limit }}"
+                then:
+                  - service: input_number.set_value
+                    data:
+                      value: "{{ night_discharge_limit }}"
+                    target:
+                      entity_id: input_number.inverter_power_limit
+                else:
+                  - service: input_number.set_value
+                    data:
+                      value: "{{ current_demand }}"
+                    target:
+                      entity_id: input_number.inverter_power_limit
+              - service: rest_command.set_inverter_power_limit
+                data:
+                  limit: "{{ states('input_number.inverter_power_limit') | int }}"
+  - service: logbook.log
+    data:
+      name: "Setting Inverter Limit: "
+      message: "Inverter limit: {{states('input_number.inverter_power_limit') }}"
+trace:
+  stored_traces: 10
+mode: single

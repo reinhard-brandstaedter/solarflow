@@ -38,33 +38,26 @@ def on_solarflow_update(msg):
         if len(solarflow_values) > sf_window:
             solarflow_values.pop(0)
         solarflow_values.append(payload["solarInputPower"])
-        #avg = reduce(lambda a,b: a+b, solarflow_values)/len(solarflow_values)
-        #print(f'Solarflow: Input: {solarflow_values} => {avg}')
     if "electricLevel" in payload:
         battery = int(payload["electricLevel"])
-        #print(f'Solarflow: Battery: {payload["electricLevel"]}%')
 
 def on_inverter_update(msg):
     if len(inverter_values) > inv_window:
         inverter_values.pop(0)
     inverter_values.append(float(msg))
-    #avg = reduce(lambda a,b: a+b, inverter_values)/len(inverter_values)
-    #print(f'Inverter: {inverter_values} => {avg}')
 
 def on_smartmeter_update(msg):
     payload = json.loads(msg)
     if len(smartmeter_values) > sm_window:
         smartmeter_values.pop(0)
     smartmeter_values.append(int(payload["Power"]["Power_curr"]))
-    #avg = reduce(lambda a,b: a+b, smartmeter_values)/len(smartmeter_values)
-    #print(f'Smartmeter: {smartmeter_values} => {avg}')
 
 def on_message(client, userdata, msg):
-    if msg.topic.startswith("inverter"):
+    if msg.topic == topic_acinput:
         on_inverter_update(msg.payload.decode())
-    if msg.topic.endswith("state"):
+    if msg.topic == topic_solarflow:
         on_solarflow_update(msg.payload.decode())
-    if msg.topic.startswith("tele"):
+    if msg.topic == topic_house:
         on_smartmeter_update(msg.payload.decode())
 
 def connect_mqtt() -> mqtt_client:
