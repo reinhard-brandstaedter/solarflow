@@ -1,4 +1,5 @@
 import random, json, time, logging, sys, requests
+from datetime import datetime
 from functools import reduce
 from paho.mqtt import client as mqtt_client
 
@@ -13,18 +14,20 @@ topic_solarflow = "SKC4SpSn/5ak8yGU7/state"
 client_id = f'subscribe-{random.randint(0, 100)}'
 
 # sliding average windows for telemetry data, to remove spikes and drops
-solarflow_values = []
 sf_window = 5
-smartmeter_values = []
+solarflow_values = [0]*sf_window
 sm_window = 10
-inverter_values = []
+smartmeter_values = [0]*sm_window
 inv_window = 5
+inverter_values = [0]*inv_window
+
 
 battery = -1
 MIN_CHARGE_LEVEL = 125          # The amount of power that should be always reserved for charging, if available. Nothing will be fed to the house if less is produced
-MAX_DISCHARGE_LEVEL = 150       # The maximum discharge level of the battery. Even if there is more demand it will not go beyond that
+MAX_DISCHARGE_LEVEL = 145       # The maximum discharge level of the battery. Even if there is more demand it will not go beyond that
 OVERAGE_LIMIT = 10              # if we produce more than what we need we can feed that much to the grid
 last_limit = 0                  # just record the last limit to avoid too many calls to inverter API
+last_solar_input_update = datetime.now()
 
 
 FORMAT = '%(asctime)s:%(levelname)s: %(message)s'
@@ -35,11 +38,23 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 
 def on_solarflow_update(msg):
     global battery
+    global last_solar_input_update
+
+    now = datetime.now()
+    diff = now - last_solar_input_update
+    seconds = diff.total_seconds()
+    #if we haven't received any update on solarInputPower we assume it's not producing
+    #log.info(f'No solarInputPower measurement received for {seconds}s')
+    if seconds > 120:
+        solarflow_values.pop(0)
+        solarflow_values.append(0)
+
     payload = json.loads(msg)
     if "solarInputPower" in payload:
         if len(solarflow_values) > sf_window:
             solarflow_values.pop(0)
         solarflow_values.append(payload["solarInputPower"])
+        last_solar_input_update = now
     if "electricLevel" in payload:
         battery = int(payload["electricLevel"])
 
@@ -126,9 +141,9 @@ def steerInverter():
             limit = demand + OVERAGE_LIMIT
         if solarinput > 0 and solarinput < demand:              # producing less than what is needed => take what we can
             limit = solarinput
-        if solarinput < 0 and demand <= MAX_DISCHARGE_LEVEL:    # not producing and demand is less than discharge limit => discharge with demand
+        if solarinput <= 0 and demand <= MAX_DISCHARGE_LEVEL:    # not producing and demand is less than discharge limit => discharge with demand
             limit = demand
-        if solarinput < 0 and demand > MAX_DISCHARGE_LEVEL:
+        if solarinput <= 0 and demand > MAX_DISCHARGE_LEVEL:
             limit = MAX_DISCHARGE_LEVEL
     else:
         if solarinput > 0 and solarinput > MIN_CHARGE_LEVEL:
@@ -138,9 +153,9 @@ def steerInverter():
                 limit = solarinput - MIN_CHARGE_LEVEL
         if solarinput > 0 and solarinput <= MIN_CHARGE_LEVEL:   # producing less than the minimum charge level => everything goes to the battery
             limit = 0
-        if solarinput == 0 and demand <= MAX_DISCHARGE_LEVEL:   # not producing and the battery is not full => discharge with MAX_DISCHARGE_LEVEL
+        if solarinput <= 0 and demand <= MAX_DISCHARGE_LEVEL:   # not producing and the battery is not full => discharge with MAX_DISCHARGE_LEVEL
             limit = int(round(demand))
-        if solarinput == 0 and demand > MAX_DISCHARGE_LEVEL:
+        if solarinput <= 0 and demand > MAX_DISCHARGE_LEVEL:
             limit = MAX_DISCHARGE_LEVEL
 
     log.info(f'Demand: {demand}, Solar: {solarinput}, Inverter: {inverterinput}, Battery: {battery}% => Limit: {limit}')
