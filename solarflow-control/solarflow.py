@@ -23,6 +23,7 @@ inverter_values = [0]*inv_window
 
 
 battery = -1
+charging = 0
 MIN_CHARGE_LEVEL = 125          # The amount of power that should be always reserved for charging, if available. Nothing will be fed to the house if less is produced
 MAX_DISCHARGE_LEVEL = 145       # The maximum discharge level of the battery. Even if there is more demand it will not go beyond that
 OVERAGE_LIMIT = 10              # if we produce more than what we need we can feed that much to the grid
@@ -37,7 +38,7 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("requests").setLevel(logging.WARNING)
 
 def on_solarflow_update(msg):
-    global battery
+    global battery, charging
     global last_solar_input_update
 
     now = datetime.now()
@@ -57,6 +58,8 @@ def on_solarflow_update(msg):
         last_solar_input_update = now
     if "electricLevel" in payload:
         battery = int(payload["electricLevel"])
+    if "outputPackPower" in payload:
+        charging = int((payload["outputPackPower"]))
 
 def on_inverter_update(msg):
     if len(inverter_values) > inv_window:
@@ -158,7 +161,7 @@ def steerInverter():
         if solarinput <= 0 and demand > MAX_DISCHARGE_LEVEL:
             limit = MAX_DISCHARGE_LEVEL
 
-    log.info(f'Demand: {demand}, Solar: {solarinput}, Inverter: {inverterinput}, Battery: {battery}% => Limit: {limit}')
+    log.info(f'Demand: {demand}W, Solar: {solarinput}W, Inverter: {inverterinput}W, Battery: {battery}% charging: {charging}W => Limit: {limit}W')
     setInverterLimit(limit)
 
 
