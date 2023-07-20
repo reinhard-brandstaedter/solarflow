@@ -7,16 +7,12 @@ from paho.mqtt import client as mqtt_client
 # our MQTT broker where we subscribe to all the telemetry data we need to steer
 # could also be an external one, e.g. fetching SolarFlow data directly from their dv-server
 broker = '192.168.1.245'
-zen_broker = 'mq.zen-iot.com'
 port = 1883
 topic_house = "tele/E220/SENSOR"
 topic_acinput = "inverter/HM-600/ch0/P_AC"
 topic_solarflow = "SKC4SpSn/5ak8yGU7/state"
-topic_zen_solarflow = "/73bkTV/5ak8yGU7/properties/report"
+topic_ahoylimit = "inverter/ctrl/limit/0"
 client_id = f'subscribe-{random.randint(0, 100)}'
-zen_client_id = os.environ.get("ZEN_CLIENT_ID", f'subscribe-{random.randint(0, 100)}')
-zen_username = os.environ.get("ZEN_USERNAME", "zenApp")
-zen_password = os.environ.get("ZEN_PASSWORD", "password")
 
 # sliding average windows for telemetry data, to remove spikes and drops
 sf_window = 5
@@ -85,9 +81,6 @@ def on_message(client, userdata, msg):
     if msg.topic == topic_house:
         on_smartmeter_update(msg.payload.decode())
 
-def on_zen_message(client, userdata, msg):
-    log.info(f'Message from Zendure: {msg.payload.decode()}')
-
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print("Connected to MQTT Broker!")
@@ -100,42 +93,13 @@ def connect_mqtt() -> mqtt_client:
     client.connect(broker, port)
     return client
 
-def connect_zen_mqtt() -> mqtt_client:
-    client = mqtt_client.Client(zen_client_id)
-    client.username_pw_set(zen_username, zen_password)
-    client.on_connect = on_connect
-    client.connect(zen_broker, port)
-    return client
-
 def subscribe(client: mqtt_client):
     client.subscribe(topic_house)
     client.subscribe(topic_acinput)
     client.subscribe(topic_solarflow)
     client.on_message = on_message
 
-def subscribe_zen(client: mqtt_client):
-    client.subscribe(topic_zen_solarflow)
-    client.on_message = on_zen_message
-
-
-def setInverterLimit(limit):
-    global last_limit
-    url = "http://192.168.3.17/api/ctrl"
-    headers = {"Content-Type": "application/json"}
-    payload = {"id":0,"cmd":"limit_nonpersistent_absolute","val": limit}
-
-    if limit != last_limit:
-        last_limit = limit
-        try:
-            result = requests.post(url=url, json=payload)
-            log.info(f'Setting Limit: {limit} : {result.reason}')
-        except Exception as e:
-            log.error(f'Posting limit failed: {payload}')
-            log.exception(e)
-    else:
-        log.info(f'Limit hasn\'t changed, not posting.')
-
-def steerInverter():
+def steerInverter(client: mqtt_client):
     # ensure we have data to work on
     if len(smartmeter_values) == 0:
         log.warning(f'Waiting for smartmeter data to make decisions...')
@@ -187,21 +151,16 @@ def steerInverter():
             limit = MAX_DISCHARGE_LEVEL
 
     log.info(f'Demand: {demand}W, Solar: {solarinput}W, Inverter: {inverterinput}W, Battery: {battery}% charging: {charging}W => Limit: {limit}W')
-    setInverterLimit(limit)
-
+    client.publish(topic_ahoylimit,f'{limit}W')
 
 def run():
     client = connect_mqtt()
     subscribe(client)
     client.loop_start()
 
-    zen_client = connect_zen_mqtt()
-    subscribe_zen(zen_client)
-    zen_client.loop_start()
-
     while True:
         time.sleep(20)
-        steerInverter()
+        steerInverter(client)
 
 if __name__ == '__main__':
     run()
