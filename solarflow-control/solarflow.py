@@ -85,6 +85,9 @@ def on_message(client, userdata, msg):
     if msg.topic == topic_house:
         on_smartmeter_update(msg.payload.decode())
 
+def on_zen_message(client, userdata, msg):
+    log.info(f'Message from Zendure: {msg.payload.decode()}')
+
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print("Connected to MQTT Broker!")
@@ -111,7 +114,7 @@ def subscribe(client: mqtt_client):
     client.on_message = on_message
 
 def subscribe_prod(client: mqtt_client):
-    client.subscribe(topic_house)
+    client.subscribe(topic_zen_solarflow)
     client.on_message = on_zen_message
 
 
