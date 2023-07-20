@@ -1,0 +1,9 @@
+{"messageId":"123","product":"solarFlow","deviceId":"5ak8yGU7","timestamp":1689773880,"properties":{"solarInputPower":295,"packInputPower":17,"outputPackPower":0,"outputHomePower":312,"packState":2},"packData":[{"power":164,"totalVol":5150,"sn":"AO4HLC9LDR02063"}]}
+
+
+
+
+
+iot/73bkTV/5ak8yGU7/properties/write
+
+{"messageId":12,"deviceId":"5ak8yGU7","timestamp":"1689792544","properties":{"outputLimit":723}}
