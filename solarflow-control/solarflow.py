@@ -27,7 +27,7 @@ charging = 0
 MIN_CHARGE_LEVEL = 125          # The amount of power that should be always reserved for charging, if available. Nothing will be fed to the house if less is produced
 MAX_DISCHARGE_LEVEL = 145       # The maximum discharge level of the battery. Even if there is more demand it will not go beyond that
 OVERAGE_LIMIT = 10              # if we produce more than what we need we can feed that much to the grid
-last_limit = 0                  # just record the last limit to avoid too many calls to inverter API
+last_limit = -1                 # just record the last limit to avoid too many calls to inverter API
 last_solar_input_update = datetime.now()
 
 
@@ -139,7 +139,14 @@ def steerInverter():
     limit = 0
 
     #now all the logic when/how to set limit
-    if battery > 95:
+    if battery >= 98:
+        if solarinput > 0:                                      # to avoid SF from limiting the input we start feeding everythong to the house, just do not get 100% charged
+            limit = solarinput
+        if solarinput <= 0 and demand <= MAX_DISCHARGE_LEVEL:    # not producing and demand is less than discharge limit => discharge with demand
+            limit = demand
+        if solarinput <= 0 and demand > MAX_DISCHARGE_LEVEL:
+            limit = MAX_DISCHARGE_LEVEL
+    elif battery > 95:
         if solarinput > 0 and solarinput > demand:              # producing more than what is needed => only take what is needed and charge, giving a bit extra to demand
             limit = demand + OVERAGE_LIMIT
         if solarinput > 0 and solarinput < demand:              # producing less than what is needed => take what we can
@@ -170,7 +177,7 @@ def run():
     subscribe(client)
     client.loop_start()
     while True:
-        time.sleep(10)
+        time.sleep(20)
         steerInverter()
 
 if __name__ == '__main__':
