@@ -113,7 +113,7 @@ def subscribe(client: mqtt_client):
     client.subscribe(topic_solarflow)
     client.on_message = on_message
 
-def subscribe_prod(client: mqtt_client):
+def subscribe_zen(client: mqtt_client):
     client.subscribe(topic_zen_solarflow)
     client.on_message = on_zen_message
 
@@ -194,6 +194,11 @@ def run():
     client = connect_mqtt()
     subscribe(client)
     client.loop_start()
+
+    zen_client = connect_zen_mqtt()
+    subscribe_zen(zen_client)
+    zen_client.loop_start()
+
     while True:
         time.sleep(20)
         steerInverter()
