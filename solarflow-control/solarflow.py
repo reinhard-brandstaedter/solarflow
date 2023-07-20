@@ -101,7 +101,7 @@ def connect_mqtt() -> mqtt_client:
     return client
 
 def connect_zen_mqtt() -> mqtt_client:
-    client = mqtt_client.Client(client_id_zen)
+    client = mqtt_client.Client(zen_client_id)
     client.username_pw_set(zen_username, zen_password)
     client.on_connect = on_connect
     client.connect(zen_broker, port)
