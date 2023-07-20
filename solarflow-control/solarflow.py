@@ -1,4 +1,4 @@
-import random, json, time, logging, sys, requests
+import random, json, time, logging, sys, requests, os
 from datetime import datetime
 from functools import reduce
 from paho.mqtt import client as mqtt_client
@@ -7,11 +7,16 @@ from paho.mqtt import client as mqtt_client
 # our MQTT broker where we subscribe to all the telemetry data we need to steer
 # could also be an external one, e.g. fetching SolarFlow data directly from their dv-server
 broker = '192.168.1.245'
+zen_broker = 'mq.zen-iot.com'
 port = 1883
 topic_house = "tele/E220/SENSOR"
 topic_acinput = "inverter/HM-600/ch0/P_AC"
 topic_solarflow = "SKC4SpSn/5ak8yGU7/state"
+topic_zen_solarflow = "/73bkTV/5ak8yGU7/properties/report"
 client_id = f'subscribe-{random.randint(0, 100)}'
+zen_client_id = os.environ.get("ZEN_CLIENT_ID", f'subscribe-{random.randint(0, 100)}')
+zen_username = os.environ.get("ZEN_USERNAME", "zenApp")
+zen_password = os.environ.get("ZEN_PASSWORD", "password")
 
 # sliding average windows for telemetry data, to remove spikes and drops
 sf_window = 5
@@ -80,25 +85,35 @@ def on_message(client, userdata, msg):
     if msg.topic == topic_house:
         on_smartmeter_update(msg.payload.decode())
 
-def connect_mqtt() -> mqtt_client:
-    def on_connect(client, userdata, flags, rc):
-        if rc == 0:
-            print("Connected to MQTT Broker!")
-        else:
-            print("Failed to connect, return code %d\n", rc)
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("Connected to MQTT Broker!")
+    else:
+        print("Failed to connect, return code %d\n", rc)
 
+def connect_mqtt() -> mqtt_client:
     client = mqtt_client.Client(client_id)
-    # client.username_pw_set(username, password)
     client.on_connect = on_connect
     client.connect(broker, port)
     return client
 
+def connect_zen_mqtt() -> mqtt_client:
+    client = mqtt_client.Client(client_id_zen)
+    client.username_pw_set(zen_username, zen_password)
+    client.on_connect = on_connect
+    client.connect(zen_broker, port)
+    return client
 
 def subscribe(client: mqtt_client):
     client.subscribe(topic_house)
     client.subscribe(topic_acinput)
     client.subscribe(topic_solarflow)
     client.on_message = on_message
+
+def subscribe_prod(client: mqtt_client):
+    client.subscribe(topic_house)
+    client.on_message = on_zen_message
+
 
 def setInverterLimit(limit):
     global last_limit
