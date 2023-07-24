@@ -1,7 +1,7 @@
 ### List of properties one can set
 
 Using the topic ```iot/<CLIENT>/<DEVICEID>/properties/write``` with payload
-{"properties": <prop>:<val>}
+```{"properties": {propertyname: propertyvalue} }```
 one can set:
 
 - inverseMaxPower : the maximum output from the hub to the microinverter
