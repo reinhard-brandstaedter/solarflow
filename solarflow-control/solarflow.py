@@ -33,6 +33,7 @@ sm_window = int(os.environ.get('SM_WINDOW',10))
 smartmeter_values = [0]*sm_window
 inv_window = int(os.environ.get('INV_WINDOW',5))
 inverter_values = [0]*inv_window
+limit_values =  [0]*10
 
 
 battery = -1
@@ -168,8 +169,12 @@ def steerInverter(client: mqtt_client):
         if solarinput <= 0 and demand > MAX_DISCHARGE_LEVEL:
             limit = MAX_DISCHARGE_LEVEL
 
+    limit_values.pop(0)
+    limit_values.append(limit)
+    limit = int(reduce(lambda a,b: a+b, limit_values)/len(limit_values))
+
     #log.info(f'History: Demand: {smartmeter_values}, Inverter: {inverter_values}, Solar: {solarflow_values}')
-    log.info(f'Demand: {demand}W, Solar: {solarinput}W, Inverter: {inverterinput}W, Battery: {battery}% charging: {charging}W => Limit: {limit}W')
+    log.info(f'Demand: {demand}W, Solar: {solarinput}W, Inverter: {inverterinput}W, Battery: {battery}% charging: {charging}W => Limit: {limit}W - {limit_values}')
     client.publish(topic_ahoylimit,f'{limit}W')
 
 def run():
