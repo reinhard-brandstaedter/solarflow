@@ -52,9 +52,9 @@ def on_solarflow_update(msg):
     now = datetime.now()
     diff = now - last_solar_input_update
     seconds = diff.total_seconds()
-    #if we haven't received any update on solarInputPower we assume it's not producing
-    log.info(f'No solarInputPower measurement received for {seconds}s')
     if seconds > 120:
+        #if we haven't received any update on solarInputPower we assume it's not producing
+        log.info(f'No solarInputPower measurement received for {seconds}s')
         solarflow_values.pop(0)
         solarflow_values.append(0)
 
@@ -133,24 +133,20 @@ def steerInverter(client: mqtt_client):
     if battery >= 98:
         if solarinput > 0:                                      # to avoid SF from limiting the input we start feeding everythong to the house, just do not get 100% charged
             limit = solarinput
-        if solarinput <= 0 and demand <= MAX_DISCHARGE_LEVEL:    # not producing and demand is less than discharge limit => discharge with demand
-            limit = demand
-        if solarinput <= 0 and demand > MAX_DISCHARGE_LEVEL:
-            limit = MAX_DISCHARGE_LEVEL
+        if solarinput <= 0:                                     # not producing and demand is less than discharge limit => discharge with demand
+            limit = min(demand,MAX_DISCHARGE_LEVEL)
     elif battery > 95:
         if solarinput > 0 and solarinput > demand:              # producing more than what is needed => only take what is needed and charge, giving a bit extra to demand
             limit = demand + OVERAGE_LIMIT
         if solarinput > 0 and solarinput < demand:              # producing less than what is needed => take what we can
             limit = solarinput
         if solarinput > 0 and solarinput <= MIN_CHARGE_LEVEL:   # producing less than the minimum charge level 
-            if hour <= 6 or hour >= 17:                         # in the morning keep using battery
+            if hour <= 6 or hour >= 16:                         # in the morning keep using battery
                 limit = MAX_DISCHARGE_LEVEL
             else:                                               # everything goes to the battery
                 limit = solarinput
-        if solarinput <= 0 and demand <= MAX_DISCHARGE_LEVEL:    # not producing and demand is less than discharge limit => discharge with demand
-            limit = demand
-        if solarinput <= 0 and demand > MAX_DISCHARGE_LEVEL:
-            limit = MAX_DISCHARGE_LEVEL
+        if solarinput <= 0:                                     # not producing and demand is less than discharge limit => discharge with demand
+            limit = min(demand,MAX_DISCHARGE_LEVEL)
     elif battery <= 10:                                         # battery is at low stage, stop discharging
         limit = 0
     else:
@@ -160,14 +156,12 @@ def steerInverter(client: mqtt_client):
             if demand > solarinput - MIN_CHARGE_LEVEL:          # producing less than what is needed => make sure battery is charged with MIN_CHARGE_LEVEL
                 limit = solarinput - MIN_CHARGE_LEVEL
         if solarinput > 0 and solarinput <= MIN_CHARGE_LEVEL:   # producing less than the minimum charge level 
-            if hour <= 6 or hour >= 17:                         # in the morning keep using battery
-                limit = MAX_DISCHARGE_LEVEL
+            if hour <= 6 or hour >= 16:                         # in the morning keep using battery
+                limit = min(demand,MAX_DISCHARGE_LEVEL)
             else:                                               # everything goes to the battery
                 limit = 0
-        if solarinput <= 0 and demand <= MAX_DISCHARGE_LEVEL:   # not producing and the battery is not full => discharge with MAX_DISCHARGE_LEVEL
-            limit = demand
-        if solarinput <= 0 and demand > MAX_DISCHARGE_LEVEL:
-            limit = MAX_DISCHARGE_LEVEL
+        if solarinput <= 0:                                     # not producing and the battery is not full => discharge with MAX_DISCHARGE_LEVEL
+            limit = min(demand,MAX_DISCHARGE_LEVEL)
 
     limit_values.pop(0)
     limit_values.append(limit)
