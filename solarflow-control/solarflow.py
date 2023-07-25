@@ -44,10 +44,13 @@ OVERAGE_LIMIT = 10              # if we produce more than what we need we can fe
 last_limit = -1                 # just record the last limit to avoid too many calls to inverter API
 last_solar_input_update = datetime.now()
 
+# know properties that are reported as reference
+property_set = {'electricLevel', 'outputPackPower', 'outputLimit', 'packInputPower', 'buzzerSwitch', 'inputLimit', 'masterSwitch', 'packNum', 'wifiState', 'socSet', 'hubState', 'remainOutTime', 'remainInputTime', 'solarInputPower', 'inverseMaxPower', 'outputHomePower', 'packState'}
 
 def on_solarflow_update(msg):
     global battery, charging
     global last_solar_input_update
+    global property_set
 
     now = datetime.now()
     diff = now - last_solar_input_update
@@ -59,6 +62,9 @@ def on_solarflow_update(msg):
         solarflow_values.append(0)
 
     payload = json.loads(msg)
+    #for p in payload:
+    #    property_set.add(p)
+
     if "solarInputPower" in payload:
         if len(solarflow_values) >= sf_window:
             solarflow_values.pop(0)
@@ -136,32 +142,25 @@ def steerInverter(client: mqtt_client):
         if solarinput <= 0:                                     # not producing and demand is less than discharge limit => discharge with demand
             limit = min(demand,MAX_DISCHARGE_LEVEL)
     elif battery > 95:
-        if solarinput > 0 and solarinput > demand:              # producing more than what is needed => only take what is needed and charge, giving a bit extra to demand
-            limit = demand + OVERAGE_LIMIT
-        if solarinput > 0 and solarinput < demand:              # producing less than what is needed => take what we can
-            limit = solarinput
+        if solarinput > 0 and solarinput > MIN_CHARGE_LEVEL:    # producing more than what is needed => only take what is needed and charge, giving a bit extra to demand
+            limit = min(demand + OVERAGE_LIMIT,solarinput)
         if solarinput > 0 and solarinput <= MIN_CHARGE_LEVEL:   # producing less than the minimum charge level 
             if hour <= 6 or hour >= 16:                         # in the morning keep using battery
                 limit = MAX_DISCHARGE_LEVEL
-            else:                                               # everything goes to the battery
-                limit = solarinput
-        if solarinput <= 0:                                     # not producing and demand is less than discharge limit => discharge with demand
-            limit = min(demand,MAX_DISCHARGE_LEVEL)
-    elif battery <= 10:                                         # battery is at low stage, stop discharging
-        limit = 0
+            else:                                               
+                limit = solarinput                              # everything goes to the house throughout the day
+        if solarinput <= 0:                                     
+            limit = min(demand,MAX_DISCHARGE_LEVEL)             # not producing and demand is less than discharge limit => discharge with what is needed but limit to MAX
+    elif battery <= 10:                                         
+        limit = 0                                               # battery is at low stage, stop discharging
     else:
         if solarinput > 0 and solarinput > MIN_CHARGE_LEVEL:
-            if demand < solarinput - MIN_CHARGE_LEVEL:          # producing more than what is needed => charge more!
-                limit = demand
-            if demand > solarinput - MIN_CHARGE_LEVEL:          # producing less than what is needed => make sure battery is charged with MIN_CHARGE_LEVEL
-                limit = solarinput - MIN_CHARGE_LEVEL
-        if solarinput > 0 and solarinput <= MIN_CHARGE_LEVEL:   # producing less than the minimum charge level 
-            if hour <= 6 or hour >= 16:                         # in the morning keep using battery
-                limit = min(demand,MAX_DISCHARGE_LEVEL)
-            else:                                               # everything goes to the battery
-                limit = 0
-        if solarinput <= 0:                                     # not producing and the battery is not full => discharge with MAX_DISCHARGE_LEVEL
-            limit = min(demand,MAX_DISCHARGE_LEVEL)
+            limit = min(demand,solarinput - MIN_CHARGE_LEVEL)   # give charging precedence
+        if solarinput <= MIN_CHARGE_LEVEL:                      # producing less than the minimum charge level 
+            if hour <= 6 or hour >= 16:                         
+                limit = min(demand,MAX_DISCHARGE_LEVEL)         # in the morning keep using battery, in the evening start using battery
+            else:                                               
+                limit = 0                                       # throughout the day use everything to charge
 
     limit_values.pop(0)
     limit_values.append(limit)
@@ -170,6 +169,7 @@ def steerInverter(client: mqtt_client):
     #log.info(f'History: Demand: {smartmeter_values}, Inverter: {inverter_values}, Solar: {solarflow_values}')
     log.info(f'Demand: {demand}W, Solar: {solarinput}W, Inverter: {inverterinput}W, Battery: {battery}% charging: {charging}W => Limit: {limit}W - {limit_values}')
     client.publish(topic_ahoylimit,f'{limit}W')
+    #log.info(f'Known properties: {property_set}')
 
 def run():
     client = connect_mqtt()
@@ -177,8 +177,10 @@ def run():
     client.loop_start()
 
     while True:
-        time.sleep(20)
+        time.sleep(15)
         steerInverter(client)
+
+    client.loop_stop()
 
 if __name__ == '__main__':
     run()
