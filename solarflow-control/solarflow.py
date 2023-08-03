@@ -136,12 +136,7 @@ def steerInverter(client: mqtt_client):
     hour = datetime.now().hour
 
     #now all the logic when/how to set limit
-    if battery >= 98:
-        if solarinput > 0:                                      # to avoid SF from limiting the input we start feeding everythong to the house, just do not get 100% charged
-            limit = solarinput
-        if solarinput <= 0:                                     # not producing and demand is less than discharge limit => discharge with demand
-            limit = min(demand,MAX_DISCHARGE_LEVEL)
-    elif battery > 95:
+    if battery > 95:
         if solarinput > 0 and solarinput > MIN_CHARGE_LEVEL:    # producing more than what is needed => only take what is needed and charge, giving a bit extra to demand
             limit = min(demand + OVERAGE_LIMIT,solarinput)
         if solarinput > 0 and solarinput <= MIN_CHARGE_LEVEL:   # producing less than the minimum charge level 
