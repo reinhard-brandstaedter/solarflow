@@ -5,10 +5,11 @@ It also allows you manually to control the output to home and the battery chargi
 
 ![solarflow status page](img/solarflow_statuspage.png)
 
-
 ## How to use
 
 I recommend to run the solarflow statuspage in a docker container to avoid any dependency issues.
+
+You will need a Zendure Account. This is the login information you would also use with the Zendure Mobile App.
 
 Pull the image with:
 ```
@@ -28,3 +29,6 @@ docker run -d --rm --env-file .env -p 127.0.0.1:5000:5000 --name solarflow-statu
 
 Open you browser and point it to [http://localhost:5000](http://localhost:5000)
 You should see a page like above. After a few seconds you should see the charts populate with data.
+
+## Notes
+The Solarflow statuspage is not protected in any way. It is intended to run in a safe local-network environment and not meant to be exposed outside without any additional protection.
