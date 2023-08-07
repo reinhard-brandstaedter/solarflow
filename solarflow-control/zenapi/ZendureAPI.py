@@ -120,6 +120,3 @@ class ZendureAPI():
                 log.error(response.text)
         except Exception as e:
             log.exception(e)
-
-
-

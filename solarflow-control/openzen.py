@@ -1,4 +1,4 @@
-from zenapi import ZendureAPI as ZendureAPI
+from zenapi import ZendureAPI as zapp
 import logging
 import os
 import sys
@@ -15,7 +15,7 @@ if ZEN_USER is None or ZEN_PASSWD is None:
     log.error("No username and password environment variable set!")
     sys.exit(0)
 
-with ZendureAPI.ZendureAPI() as api:
+with zapp.ZendureAPI() as api:
     token = api.authenticate(ZEN_USER,ZEN_PASSWD)
     log.info(f'Token: {token}')
     devices = api.get_device_ids()
