@@ -25,3 +25,6 @@ Then run the container and expose it's port to a local port:
 ```
 docker run -d --rm --env-file .env -p 127.0.0.1:5000:5000 --name solarflow-statuspage rbrandstaedter/solarflow-statuspage:latest
 ```
+
+Open you browser and point it to [http://localhost:5000](http://localhost:5000)
+You should see a page like above. After a few seconds you should see the charts populate with data.
