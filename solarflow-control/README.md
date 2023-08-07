@@ -13,3 +13,4 @@ The script uses the Zendure developer MQTT telemetry data (bridged to a local MQ
 
 ### Prerequisites
 The script requires a a few prerequisites that are described [in my initial documentation for HA integration](../controlling_with_homeassistant.md). It especially depends on the local MQTT broker to get telemetry data.
+
