@@ -83,9 +83,6 @@ def on_solarflow_update(msg):
                             dev_pack["maxTemp"] = pack["maxTemp"]
 
 
-
-
-
 def on_message(client, userdata, msg):
     on_solarflow_update(msg.payload.decode())
 
