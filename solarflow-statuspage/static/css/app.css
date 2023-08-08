@@ -12,8 +12,14 @@
     font-size: 1.1em;
 }
 
-
 .chart-container {
 	max-width: 600px;
 	margin: 0 auto;
+}
+
+td.key {
+    font-weight: bold;
+}
+td.value {
+
 }

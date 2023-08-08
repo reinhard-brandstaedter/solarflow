@@ -29,6 +29,7 @@ broker = 'mq.zen-iot.com'
 port = 1883
 client: mqtt_client
 auth: ZenAuth
+device_details = {}
 
 
 # Flask SocketIO background task
@@ -44,6 +45,7 @@ def get_current_datetime():
     return now.strftime("%H:%M:%S")
 
 def on_solarflow_update(msg):
+    global device_details
     payload = json.loads(msg)
     log.info(payload["properties"])
     if "outputHomePower" in payload["properties"]:
@@ -54,7 +56,15 @@ def on_solarflow_update(msg):
         socketio.emit('updateSensorData', {'metric': 'outputPack', 'value': payload["properties"]["outputPackPower"], 'date': get_current_datetime()})
     if "electricLevel" in payload["properties"]:
         socketio.emit('updateSensorData', {'metric': 'electricLevel', 'value': payload["properties"]["electricLevel"], 'date': get_current_datetime()})
-
+    if "outputLimit" in payload["properties"]:
+        socketio.emit('updateLimit', {'property': 'outputLimit', 'value': f'{payload["properties"]["outputLimit"]} W'})
+    if "inputLimit" in payload["properties"]:
+        socketio.emit('updateLimit', {'property': 'inputLimit', 'value': f'{payload["properties"]["inputLimit"]} W'})
+    if "socSet" in payload["properties"]:
+        socketio.emit('updateLimit', {'property': 'socSet', 'value': f'{payload["properties"]["socSet"]/10} %'})
+    if "minSoc" in payload["properties"]:
+        socketio.emit('updateLimit', {'property': 'minSoc', 'value': f'{payload["properties"]["minSoc"]/10} %'})
+        
     if "packData" in payload:
         log.info(payload["packData"])    
         if len(payload["packData"]) >= 1:
@@ -63,6 +73,15 @@ def on_solarflow_update(msg):
                     socketio.emit('updateSensorData', {'metric': 'socLevel', 'value': pack["socLevel"], 'date': pack["sn"]})
                 if "maxTemp" in pack:
                     socketio.emit('updateSensorData', {'metric': 'maxTemp', 'value': pack["maxTemp"]/100, 'date': pack["sn"]})
+            for dev_pack in device_details["packDataList"]:
+                for pack in payload["packData"]:
+                    if "socLevel" in pack:
+                        if dev_pack["sn"] == pack["sn"]:
+                            dev_pack["socLevel"] = pack["socLevel"]
+                    if "maxTemp" in pack:
+                        if dev_pack["sn"] == pack["sn"]:
+                            dev_pack["maxTemp"] = pack["maxTemp"]
+
 
 
 
@@ -79,8 +98,7 @@ def on_connect(client, userdata, flags, rc):
 def on_disconnect(client, userdata, rc):
     if rc != 0:
         log.warning("Unexpected disconnection.")
-        auth = get_auth()
-        client.reinitialise(client_id=auth.clientId)
+        mqtt_background_task()
 
 def connect_mqtt(client_id) -> mqtt_client:
     global client
@@ -99,19 +117,15 @@ def subscribe(client: mqtt_client, auth: ZenAuth):
     client.subscribe(iot_topic)
     client.on_message = on_message
 
-def run(auth):
-    client = connect_mqtt(auth.clientId)
-    subscribe(client,auth)
-    client.loop_forever()
-
-
 def get_auth() -> ZenAuth:
     global auth
+    global device_details
     with zapp.ZendureAPI() as api:
         token = api.authenticate(ZEN_USER,ZEN_PASSWD)
         devices = api.get_device_ids()
         for dev_id in devices:
             device = api.get_device_details(dev_id)
+            device_details = device
             auth = ZenAuth(device["productKey"],device["deviceKey"],token)
         
             # send initial data imediately, like battery stack info
@@ -124,23 +138,29 @@ def get_auth() -> ZenAuth:
         log.info(f'Zendure Auth: {auth}')
         return auth
 
-def background_task():
+def mqtt_background_task():
     auth = get_auth()
-    run(auth)
+    client = connect_mqtt(auth.clientId)
+    subscribe(client,auth)
+    client.loop_start()
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    global devices
+    return render_template('index.html', **device_details )
 
 @socketio.on('connect')
 def connect():
-    global thread
+    global device_details
     log.info('Client connected')
 
-    global thread
-    with thread_lock:
-        if thread is None:
-            thread = socketio.start_background_task(background_task)
+    #emit device info we have collected on startup (may not be the full accurate data)
+    socketio.emit('updateSensorData', {'metric': 'electricLevel', 'value': device_details["electricLevel"], 'date': get_current_datetime()})
+
+    for battery in device_details["packDataList"]:
+        socketio.emit('updateSensorData', {'metric': 'socLevel', 'value': battery["socLevel"], 'date': battery["sn"]})
+        socketio.emit('updateSensorData', {'metric': 'maxTemp', 'value': battery["maxTemp"]/10, 'date': battery["sn"]})
+
 
 @socketio.on('setLimit')
 def setLimit(msg):
@@ -157,4 +177,7 @@ def disconnect():
     log.info('Client disconnected')
 
 if __name__ == '__main__':
+    # starting mqtt network loop
+    mqtt_background_task()
+    
     socketio.run(app,host="0.0.0.0",allow_unsafe_werkzeug=True)
