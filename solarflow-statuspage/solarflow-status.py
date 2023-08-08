@@ -80,7 +80,7 @@ def on_disconnect(client, userdata, rc):
     if rc != 0:
         log.warning("Unexpected disconnection.")
         auth = get_auth()
-        client.reinitialize(client_id=auth.clientId)
+        client.reinitialise(client_id=auth.clientId)
 
 def connect_mqtt(client_id) -> mqtt_client:
     global client
@@ -154,7 +154,7 @@ def setLimit(msg):
 
 @socketio.on('disconnect')
 def disconnect():
-    log.info('Client disconnected',  request.sid)
+    log.info('Client disconnected')
 
 if __name__ == '__main__':
     socketio.run(app,host="0.0.0.0",allow_unsafe_werkzeug=True)
