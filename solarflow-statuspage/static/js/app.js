@@ -154,6 +154,11 @@ $(document).ready(function () {
     return false;
   });
 
+  $('#form-minSoc').on('submit', function () {
+    socket.emit('setLimit', '{"property": "minSoc", "value":' + $('#minSoc').val()*10 +'}' );
+    return false;
+  });
+
   function addData(label, metric, data) {
     remove = false
     if (metric == "socLevel" || metric == "maxTemp" ) {
@@ -195,5 +200,9 @@ $(document).ready(function () {
       removeFirstData(msg.metric);
     }
     addData(msg.date, msg.metric, msg.value);
+  });
+
+  socket.on("updateLimit", function(msg) {
+    document.getElementById("state-" + msg.property).innerHTML = msg.value
   });
 });
