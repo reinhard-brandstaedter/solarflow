@@ -1,6 +1,6 @@
 $(document).ready(function () {
-  const outputHomectx = document.getElementById("outputHome").getContext("2d");
 
+  const outputHomectx = document.getElementById("outputHome").getContext("2d");
   const outputHome = new Chart(outputHomectx, {
     type: "bar",
     data: {
@@ -18,7 +18,7 @@ $(document).ready(function () {
       scales: {
         y: {
           text: "W",
-          beginAtZero: true
+          beginAtZero: true,
         }
       }
     },
@@ -41,7 +41,7 @@ $(document).ready(function () {
       },
       scales: {
         y: {
-          beginAtZero: true
+          beginAtZero: true,
         }
       }
     },
@@ -51,7 +51,7 @@ $(document).ready(function () {
   const outputPack = new Chart(outputPackctx, {
     type: "bar",
     data: {
-      datasets: [{ label: "Charging (W)",  }],
+      datasets: [{ label: "Charging/Discharging (W)",  }],
     },
     options: {
       borderWidth: 1,
@@ -72,14 +72,20 @@ $(document).ready(function () {
 
   const electricLevelctx = document.getElementById("electricLevel").getContext("2d");
   const electricLevel = new Chart(electricLevelctx, {
-    type: "bar",
+    type: "line",
+    tension: 0.4,
     data: {
-      datasets: [{ label: "Average Battery Level",  }],
+      datasets: [{ label: "Average Battery Level" }, {fill: "origin"}],
     },
     options: {
       borderWidth: 1,
-      borderColor: ['rgba(95, 170, 145, 1)',],
-      backgroundColor: ['rgba(175, 218, 208, 1)',],
+      borderColor: ['rgba(98, 214, 158, 1)',],
+      backgroundColor: ['rgba(98, 214, 158, 1)',],
+      elements: {
+        point:{
+            radius: 0
+        }
+      },
       plugins: {
         legend: {
             display: false,
@@ -87,7 +93,9 @@ $(document).ready(function () {
       },
       scales: {
         y: {
-          beginAtZero: true
+          beginAtZero: true,
+          max: 100,
+          title: "˚C"
         }
       }
     },
@@ -99,41 +107,232 @@ $(document).ready(function () {
     data: {
       datasets: [{ label: "Battery Temperature",  }],
     },
+    plugins: [ChartDataLabels],
     options: {
       borderWidth: 1,
-      borderColor: ['rgba(95, 170, 145, 1)',],
-      backgroundColor: ['rgba(175, 218, 208, 1)',],
+      borderColor: ['rgba(98, 214, 158, 1)',],
+      backgroundColor: ['rgba(98, 214, 158, 1)',],
       plugins: {
         legend: {
             display: false,
+        },
+        datalabels: {
+          anchor: "end",
+          align: "top",
         }
       },
       scales: {
         y: {
-          beginAtZero: true
+          beginAtZero: true,
+          max: 75,
+          grid: {
+            drawBorder: false,
+            display: false,
+          },
+          ticks: {
+            display: false
+          }
+        },
+        x: {
+          grid: {
+            drawBorder: false,
+            display: false,
+          },
         }
       }
-    },
+    }
   });
 
   const socLevelctx = document.getElementById("socLevel").getContext("2d");
   const socLevel = new Chart(socLevelctx, {
     type: "bar",
     data: {
-      datasets: [{ label: "Battery State of Charge",  }],
+      datasets: [
+        { 
+          label: "Battery State of Charge",
+          borderRadius: 7,
+          borderSkipped: "bottom"
+        }
+      ],
     },
+    plugins: [ChartDataLabels],
     options: {
       borderWidth: 1,
-      borderColor: ['rgba(95, 170, 145, 1)',],
-      backgroundColor: ['rgba(175, 218, 208, 1)',],
+      borderColor: ['rgba(98, 214, 158, 1)',],
+      backgroundColor: ['rgba(98, 214, 158, 1)',],
       plugins: {
         legend: {
             display: false,
+        },
+        datalabels: {
+          anchor: "end",
+          align: "top",
         }
       },
       scales: {
         y: {
-          beginAtZero: true
+          beginAtZero: true,
+          max: 100,
+          grid: {
+            drawBorder: false,
+            display: false,
+          },
+          ticks: {
+            display: false
+          }
+        },
+        x: {
+          grid: {
+            drawBorder: false,
+            display: false,
+          },
+        }
+      }
+    },
+  });
+
+
+  const minVolctx = document.getElementById("minVol").getContext("2d");
+  const minVol = new Chart(minVolctx, {
+    type: "bar",
+    data: {
+      datasets: [
+        { 
+          label: "Min Cell Voltage",
+          borderRadius: 7,
+          borderSkipped: "bottom"
+        }
+      ],
+    },
+    plugins: [ChartDataLabels],
+    options: {
+      borderWidth: 1,
+      borderColor: ['rgba(98, 214, 158, 1)',],
+      backgroundColor: ['rgba(98, 214, 158, 1)',],
+      plugins: {
+        legend: {
+            display: false,
+        },
+        datalabels: {
+          anchor: "end",
+          align: "top",
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          grid: {
+            drawBorder: false,
+            display: false,
+          },
+          ticks: {
+            display: false
+          }
+        },
+        x: {
+          grid: {
+            drawBorder: false,
+            display: false,
+          },
+        }
+      }
+    },
+  });
+
+
+  const maxVolctx = document.getElementById("maxVol").getContext("2d");
+  const maxVol = new Chart(maxVolctx, {
+    type: "bar",
+    data: {
+      datasets: [
+        { 
+          label: "Max Cell Voltage",
+          borderRadius: 7,
+          borderSkipped: "bottom"
+        }
+      ],
+    },
+    plugins: [ChartDataLabels],
+    options: {
+      borderWidth: 1,
+      borderColor: ['rgba(98, 214, 158, 1)',],
+      backgroundColor: ['rgba(98, 214, 158, 1)',],
+      plugins: {
+        legend: {
+            display: false,
+        },
+        datalabels: {
+          anchor: "end",
+          align: "top",
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          grid: {
+            drawBorder: false,
+            display: false,
+          },
+          ticks: {
+            display: false
+          }
+        },
+        x: {
+          grid: {
+            drawBorder: false,
+            display: false,
+          },
+        }
+      }
+    },
+  });
+
+
+  const totalVolctx = document.getElementById("totalVol").getContext("2d");
+  const totalVol = new Chart(totalVolctx, {
+    type: "bar",
+    data: {
+      datasets: [
+        { 
+          label: "Battery Voltage",
+          borderRadius: 7,
+          borderSkipped: "bottom"
+        }
+      ],
+    },
+    plugins: [ChartDataLabels],
+    options: {
+      borderWidth: 1,
+      borderColor: ['rgba(98, 214, 158, 1)',],
+      backgroundColor: ['rgba(98, 214, 158, 1)',],
+      plugins: {
+        legend: {
+            display: false,
+        },
+        datalabels: {
+          anchor: "end",
+          align: "top",
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          grid: {
+            drawBorder: false,
+            display: false,
+          },
+          ticks: {
+            display: false
+          }
+        },
+        x: {
+          grid: {
+            drawBorder: false,
+            display: false,
+          },
         }
       }
     },
@@ -160,8 +359,9 @@ $(document).ready(function () {
   });
 
   function addData(label, metric, data) {
+    singletons = ["socLevel","maxTemp","totalVol","minVol","maxVol"]
     remove = false
-    if (metric == "socLevel" || metric == "maxTemp" ) {
+    if (singletons.includes(metric)) {
       idx = eval(metric).data.labels.indexOf(label)
       remove = (idx >= 0)
       if (remove) {
@@ -171,12 +371,29 @@ $(document).ready(function () {
     eval(metric).data.labels.push(label);
     eval(metric).data.datasets.forEach((dataset) => {
       if (remove) {
-        console.log("removing data")
         dataset.data.splice(idx,1)
       }
       dataset.data.push(data);
+      // for those where we only display one value sort it by label
+      if (singletons.includes(metric)) {
+        eval(metric).data.labels.sort(sortDps())
+        //console.log(eval(metric).data.labels)
+      }
     });
     eval(metric).update();
+  }
+
+  function sortDps(){
+    return function(a, b){
+      //console.log("Comparing: " + a + " : " + b)
+      if(a.label < b.label){
+        return 1;
+      }else if(a.label > b.label){
+        return -1;
+      }else{
+        return 0;   
+      }
+    }
   }
 
   function removeFirstData(metric) {

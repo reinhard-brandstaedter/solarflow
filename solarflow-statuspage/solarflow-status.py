@@ -47,24 +47,32 @@ def get_current_datetime():
 def on_solarflow_update(msg):
     global device_details
     payload = json.loads(msg)
-    log.info(payload["properties"])
-    if "outputHomePower" in payload["properties"]:
-        socketio.emit('updateSensorData', {'metric': 'outputHome', 'value': payload["properties"]["outputHomePower"], 'date': get_current_datetime()})
-    if "solarInputPower" in payload["properties"]:
-        socketio.emit('updateSensorData', {'metric': 'solarInput', 'value': payload["properties"]["solarInputPower"], 'date': get_current_datetime()})
-    if "outputPackPower" in payload["properties"]:
-        socketio.emit('updateSensorData', {'metric': 'outputPack', 'value': payload["properties"]["outputPackPower"], 'date': get_current_datetime()})
-    if "electricLevel" in payload["properties"]:
-        socketio.emit('updateSensorData', {'metric': 'electricLevel', 'value': payload["properties"]["electricLevel"], 'date': get_current_datetime()})
-    if "outputLimit" in payload["properties"]:
-        socketio.emit('updateLimit', {'property': 'outputLimit', 'value': f'{payload["properties"]["outputLimit"]} W'})
-    if "inputLimit" in payload["properties"]:
-        socketio.emit('updateLimit', {'property': 'inputLimit', 'value': f'{payload["properties"]["inputLimit"]} W'})
-    if "socSet" in payload["properties"]:
-        socketio.emit('updateLimit', {'property': 'socSet', 'value': f'{payload["properties"]["socSet"]/10} %'})
-    if "minSoc" in payload["properties"]:
-        socketio.emit('updateLimit', {'property': 'minSoc', 'value': f'{payload["properties"]["minSoc"]/10} %'})
-        
+    if "properties" in payload:
+        log.info(payload["properties"])
+        if "outputHomePower" in payload["properties"]:
+            socketio.emit('updateSensorData', {'metric': 'outputHome', 'value': payload["properties"]["outputHomePower"], 'date': get_current_datetime()})
+        if "solarInputPower" in payload["properties"]:
+            socketio.emit('updateSensorData', {'metric': 'solarInput', 'value': payload["properties"]["solarInputPower"], 'date': get_current_datetime()})
+        if "outputPackPower" in payload["properties"]:
+            socketio.emit('updateSensorData', {'metric': 'outputPack', 'value': -payload["properties"]["outputPackPower"], 'date': get_current_datetime()})
+        if "packInputPower" in payload["properties"]:
+            socketio.emit('updateSensorData', {'metric': 'outputPack', 'value': payload["properties"]["packInputPower"], 'date': get_current_datetime()})
+        if "electricLevel" in payload["properties"]:
+            socketio.emit('updateSensorData', {'metric': 'electricLevel', 'value': payload["properties"]["electricLevel"], 'date': get_current_datetime()})
+            device_details["electricLevel"] = payload["properties"]["electricLevel"]
+        if "outputLimit" in payload["properties"]:
+            socketio.emit('updateLimit', {'property': 'outputLimit', 'value': f'{payload["properties"]["outputLimit"]} W'})
+            device_details["outputLimit"] = payload["properties"]["outputLimit"]
+        if "inputLimit" in payload["properties"]:
+            socketio.emit('updateLimit', {'property': 'inputLimit', 'value': f'{payload["properties"]["inputLimit"]} W'})
+            device_details["inputLimit"] = payload["properties"]["inputLimit"]
+        if "socSet" in payload["properties"]:
+            socketio.emit('updateLimit', {'property': 'socSet', 'value': f'{payload["properties"]["socSet"]/10} %'})
+            device_details["socSet"] = payload["properties"]["socSet"]
+        if "minSoc" in payload["properties"]:
+            socketio.emit('updateLimit', {'property': 'minSoc', 'value': f'{payload["properties"]["minSoc"]/10} %'})
+            device_details["minSoc"] = payload["properties"]["minSoc"]
+            
     if "packData" in payload:
         log.info(payload["packData"])    
         if len(payload["packData"]) >= 1:
@@ -73,6 +81,13 @@ def on_solarflow_update(msg):
                     socketio.emit('updateSensorData', {'metric': 'socLevel', 'value': pack["socLevel"], 'date': pack["sn"]})
                 if "maxTemp" in pack:
                     socketio.emit('updateSensorData', {'metric': 'maxTemp', 'value': pack["maxTemp"]/100, 'date': pack["sn"]})
+                if "minVol" in pack:
+                    socketio.emit('updateSensorData', {'metric': 'minVol', 'value': pack["minVol"]/100, 'date': pack["sn"]})
+                if "maxVol" in pack:
+                    socketio.emit('updateSensorData', {'metric': 'maxVol', 'value': pack["maxVol"]/100, 'date': pack["sn"]})
+                if "totalVol" in pack:
+                    socketio.emit('updateSensorData', {'metric': 'totalVol', 'value': pack["totalVol"]/100, 'date': pack["sn"]})
+                
             for dev_pack in device_details["packDataList"]:
                 for pack in payload["packData"]:
                     if "socLevel" in pack:
@@ -124,13 +139,6 @@ def get_auth() -> ZenAuth:
             device = api.get_device_details(dev_id)
             device_details = device
             auth = ZenAuth(device["productKey"],device["deviceKey"],token)
-        
-            # send initial data imediately, like battery stack info
-            socketio.emit('updateSensorData', {'metric': 'electricLevel', 'value': device["electricLevel"], 'date': get_current_datetime()})
-
-            for battery in device["packDataList"]:
-                socketio.emit('updateSensorData', {'metric': 'socLevel', 'value': battery["socLevel"], 'date': battery["sn"]})
-                socketio.emit('updateSensorData', {'metric': 'maxTemp', 'value': battery["maxTemp"]/10, 'date': battery["sn"]})
 
         log.info(f'Zendure Auth: {auth}')
         return auth
@@ -156,7 +164,7 @@ def connect():
 
     for battery in device_details["packDataList"]:
         socketio.emit('updateSensorData', {'metric': 'socLevel', 'value': battery["socLevel"], 'date': battery["sn"]})
-        socketio.emit('updateSensorData', {'metric': 'maxTemp', 'value': battery["maxTemp"]/10, 'date': battery["sn"]})
+        socketio.emit('updateSensorData', {'metric': 'maxTemp', 'value': battery["maxTemp"]/10 if battery["maxTemp"] < 1000 else battery["maxTemp"]/100  , 'date': battery["sn"]})
 
 
 @socketio.on('setLimit')
