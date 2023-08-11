@@ -223,7 +223,7 @@ $(document).ready(function () {
       scales: {
         y: {
           beginAtZero: true,
-          max: 100,
+          max: 120,
           grid: {
             drawBorder: false,
             display: false,
@@ -409,6 +409,10 @@ $(document).ready(function () {
     return false;
   });
 
+  function updateCurValues(metric, data){
+    document.getElementById("cur-" + metric).textContent = data
+  }
+
   function addData(label, metric, data) {
     singletons = ["socLevel","maxTemp","totalVol","minVol","maxVol"]
     remove = false
@@ -461,20 +465,24 @@ $(document).ready(function () {
     });
   }
 
-  const MAX_DATA_COUNT = 200;
+  const MAX_DATA_COUNT = 2000;
   //connect to the socket server.
   //   var socket = io.connect("http://" + document.domain + ":" + location.port);
   var socket = io.connect();
 
   //receive details from server
   socket.on("updateSensorData", function (msg) {
-    console.log("Received sensorData: "+ msg.date + "::" + msg.metric + " :: " + msg.value);
+    //console.log("Received sensorData: "+ msg.date + "::" + msg.metric + " :: " + msg.value);
 
     // Show only MAX_DATA_COUNT data
     if (eval(msg.metric).data.labels.length > MAX_DATA_COUNT) {
       removeFirstData(msg.metric);
     }
     addData(msg.date, msg.metric, msg.value);
+    timeseries = ["outputHome","solarInput","outputPack"]
+    if (timeseries.includes(msg.metric)) {
+      updateCurValues(msg.metric, msg.value)
+    }
   });
 
   socket.on("updateLimit", function(msg) {
