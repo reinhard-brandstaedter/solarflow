@@ -2,14 +2,19 @@ $(document).ready(function () {
 
   const outputHomectx = document.getElementById("outputHome").getContext("2d");
   const outputHome = new Chart(outputHomectx, {
-    type: "bar",
+    type: "line",
     data: {
-      datasets: [{ label: "Output to Home (W)",  }],
+      datasets: [{ label: "Output to Home (W)"}, {fill: "origin"}],
     },
     options: {
       borderWidth: 1,
       borderColor: ['rgba(130, 182, 223, 1)',],
       backgroundColor: ['rgba(192, 224, 248, 1)',],
+      elements: {
+        point:{
+            radius: 0
+        }
+      },
       plugins: {
         legend: {
             display: false,
@@ -19,8 +24,9 @@ $(document).ready(function () {
         x: {
           type: "time",
           time: {
+            unit: "minute",
             displayFormats: {
-                seconds: 'HH:mm:ss'
+              minute: "HH:mm"
             }
           }
         },
@@ -34,14 +40,19 @@ $(document).ready(function () {
 
   const solarInputctx = document.getElementById("solarInput").getContext("2d");
   const solarInput = new Chart(solarInputctx, {
-    type: "bar",
+    type: "line",
     data: {
-      datasets: [{ label: "Solar Input (W)",  }],
+      datasets: [{ label: "Solar Input (W)"}, {fill: "origin"}],
     },
     options: {
       borderWidth: 1,
       borderColor: ['rgba(248, 212, 105, 1)',],
       backgroundColor: ['rgba(249, 236, 184, 1)',],
+      elements: {
+        point:{
+            radius: 0
+        }
+      },
       plugins: {
         legend: {
             display: false,
@@ -51,8 +62,9 @@ $(document).ready(function () {
         x: {
           type: "time",
           time: {
+            unit: "minute",
             displayFormats: {
-                seconds: 'HH:mm:ss'
+              minute: "HH:mm"
             }
           }
         },
@@ -65,14 +77,19 @@ $(document).ready(function () {
 
   const outputPackctx = document.getElementById("outputPack").getContext("2d");
   const outputPack = new Chart(outputPackctx, {
-    type: "bar",
+    type: "line",
     data: {
-      datasets: [{ label: "Charging/Discharging (W)",  }],
+      datasets: [{ label: "Charging/Discharging (W)"}, {fill: "origin"}],
     },
     options: {
       borderWidth: 1,
       borderColor: ['rgba(95, 170, 145, 1)',],
       backgroundColor: ['rgba(175, 218, 208, 1)',],
+      elements: {
+        point:{
+            radius: 0
+        }
+      },
       plugins: {
         legend: {
             display: false,
@@ -82,8 +99,9 @@ $(document).ready(function () {
         x: {
           type: "time",
           time: {
+            unit: "minute",
             displayFormats: {
-                seconds: 'HH:mm:ss'
+              minute: "HH:mm"
             }
           }
         },
@@ -118,12 +136,10 @@ $(document).ready(function () {
       scales: {
         x: {
           type: "time",
-          ticks: {
-            source: "labels",
-          },
           time: {
+            unit: "minute",
             displayFormats: {
-                seconds: 'HH:mm:ss'
+              minute: "HH:mm"
             }
           }
         },
@@ -404,6 +420,13 @@ $(document).ready(function () {
       }
     }
     eval(metric).data.labels.push(label);
+
+    // if its a timeseries chart make sure we only display 30minutes
+    timeseries = ["outputHome","solarInput","outputPack","electricLevel"]
+    if (timeseries.includes(metric)) {
+      eval(metric).options.scales.x.min = Date.now()-900000
+    }
+
     eval(metric).data.datasets.forEach((dataset) => {
       if (remove) {
         dataset.data.splice(idx,1)
