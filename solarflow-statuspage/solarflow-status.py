@@ -1,6 +1,7 @@
 from zenapi import ZendureAPI as zapp
-import random, json, time, logging, sys, requests, os
+import json, time, logging, sys, os
 from datetime import datetime
+import time
 from functools import reduce
 from paho.mqtt import client as mqtt_client
 from collections import namedtuple
@@ -28,6 +29,10 @@ ZenAuth = namedtuple("ZenAuth",["productKey","deviceKey","clientId"])
 broker = 'mq.zen-iot.com'
 port = 1883
 client: mqtt_client
+
+local_broker = "192.168.1.245"
+local_port: 1883
+local_client: mqtt_client
 auth: ZenAuth
 device_details = {}
 
@@ -46,19 +51,24 @@ def get_current_datetime():
 
 def on_solarflow_update(msg):
     global device_details
+    global local_client
     payload = json.loads(msg)
     if "properties" in payload:
         log.info(payload["properties"])
         if "outputHomePower" in payload["properties"]:
-            socketio.emit('updateSensorData', {'metric': 'outputHome', 'value': payload["properties"]["outputHomePower"], 'date': get_current_datetime()})
+            local_client.publish("solarflow-statuspage/outputHomePower",payload["properties"]["outputHomePower"])
+            socketio.emit('updateSensorData', {'metric': 'outputHome', 'value': payload["properties"]["outputHomePower"], 'date': round(time.time()*1000)})
         if "solarInputPower" in payload["properties"]:
-            socketio.emit('updateSensorData', {'metric': 'solarInput', 'value': payload["properties"]["solarInputPower"], 'date': get_current_datetime()})
+            local_client.publish("solarflow-statuspage/solarInputPower",payload["properties"]["solarInputPower"])
+            socketio.emit('updateSensorData', {'metric': 'solarInput', 'value': payload["properties"]["solarInputPower"], 'date': round(time.time()*1000)})
         if "outputPackPower" in payload["properties"]:
-            socketio.emit('updateSensorData', {'metric': 'outputPack', 'value': -payload["properties"]["outputPackPower"], 'date': get_current_datetime()})
+            local_client.publish("solarflow-statuspage/outputPackPower",payload["properties"]["outputPackPower"])
+            socketio.emit('updateSensorData', {'metric': 'outputPack', 'value': -payload["properties"]["outputPackPower"], 'date': round(time.time()*1000)})
         if "packInputPower" in payload["properties"]:
-            socketio.emit('updateSensorData', {'metric': 'outputPack', 'value': payload["properties"]["packInputPower"], 'date': get_current_datetime()})
+            socketio.emit('updateSensorData', {'metric': 'outputPack', 'value': payload["properties"]["packInputPower"], 'date': round(time.time()*1000)})
         if "electricLevel" in payload["properties"]:
-            socketio.emit('updateSensorData', {'metric': 'electricLevel', 'value': payload["properties"]["electricLevel"], 'date': get_current_datetime()})
+            local_client.publish("solarflow-statuspage/electricLevel",payload["properties"]["electricLevel"])
+            socketio.emit('updateSensorData', {'metric': 'electricLevel', 'value': payload["properties"]["electricLevel"], 'date': round(time.time()*1000)})
             device_details["electricLevel"] = payload["properties"]["electricLevel"]
         if "outputLimit" in payload["properties"]:
             socketio.emit('updateLimit', {'property': 'outputLimit', 'value': f'{payload["properties"]["outputLimit"]} W'})
@@ -149,6 +159,13 @@ def mqtt_background_task():
     subscribe(client,auth)
     client.loop_start()
 
+def local_mqtt_connect():
+    global local_client
+    global local_port
+    local_client = mqtt_client.Client(client_id="solarflow-status")
+    local_client.connect(local_broker)
+    local_client.on_connect = on_connect
+
 @app.route('/')
 def index():
     global devices
@@ -160,7 +177,7 @@ def connect():
     log.info('Client connected')
 
     #emit device info we have collected on startup (may not be the full accurate data)
-    socketio.emit('updateSensorData', {'metric': 'electricLevel', 'value': device_details["electricLevel"], 'date': get_current_datetime()})
+    socketio.emit('updateSensorData', {'metric': 'electricLevel', 'value': device_details["electricLevel"], 'date':  round(time.time()*1000)})
 
     for battery in device_details["packDataList"]:
         socketio.emit('updateSensorData', {'metric': 'socLevel', 'value': battery["socLevel"], 'date': battery["sn"]})
@@ -184,5 +201,8 @@ def disconnect():
 if __name__ == '__main__':
     # starting mqtt network loop
     mqtt_background_task()
+
+    # connect to local mqtt
+    local_mqtt_connect()
     
     socketio.run(app,host="0.0.0.0",allow_unsafe_werkzeug=True)
