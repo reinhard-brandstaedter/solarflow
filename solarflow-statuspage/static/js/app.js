@@ -16,6 +16,14 @@ $(document).ready(function () {
         }
       },
       scales: {
+        x: {
+          type: "time",
+          time: {
+            displayFormats: {
+                seconds: 'HH:mm:ss'
+            }
+          }
+        },
         y: {
           text: "W",
           beginAtZero: true,
@@ -40,6 +48,14 @@ $(document).ready(function () {
         }
       },
       scales: {
+        x: {
+          type: "time",
+          time: {
+            displayFormats: {
+                seconds: 'HH:mm:ss'
+            }
+          }
+        },
         y: {
           beginAtZero: true,
         }
@@ -63,6 +79,14 @@ $(document).ready(function () {
         }
       },
       scales: {
+        x: {
+          type: "time",
+          time: {
+            displayFormats: {
+                seconds: 'HH:mm:ss'
+            }
+          }
+        },
         y: {
           beginAtZero: true
         }
@@ -92,6 +116,17 @@ $(document).ready(function () {
         }
       },
       scales: {
+        x: {
+          type: "time",
+          ticks: {
+            source: "labels",
+          },
+          time: {
+            displayFormats: {
+                seconds: 'HH:mm:ss'
+            }
+          }
+        },
         y: {
           beginAtZero: true,
           max: 100,

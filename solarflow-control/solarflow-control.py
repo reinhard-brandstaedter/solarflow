@@ -28,6 +28,10 @@ port = 1883
 topic_house = "tele/E220/SENSOR"
 topic_acinput = "inverter/HM-600/ch0/P_AC"
 topic_solarflow = f'{SF_ACCOUNT_ID}/{SF_DEVICE_ID}/state'
+topic_solarflow_solarinput = "solarflow-statuspage/solarInputPower"
+topic_solarflow_electriclevel = "solarflow-statuspage/electricLevel"
+topic_solarflow_outputpack = "solarflow-statuspage/outputPackPower"
+topic_solarflow_outputhome = "solarflow-statuspage/outputHomePower"
 topic_ahoylimit = "inverter/ctrl/limit/0"
 client_id = f'subscribe-{random.randint(0, 100)}'
 
@@ -43,6 +47,7 @@ limit_values =  [0]*10
 
 battery = -1
 charging = 0
+home = 0
 MIN_CHARGE_LEVEL = int(os.environ.get('MIN_CHARGE_LEVEL',125))          # The amount of power that should be always reserved for charging, if available. Nothing will be fed to the house if less is produced
 MAX_DISCHARGE_LEVEL = int(os.environ.get('MAX_DISCHARGE_LEVEL',145))    # The maximum discharge level of the battery. Even if there is more demand it will not go beyond that
 OVERAGE_LIMIT = 30              # if we produce more than what we need we can feed that much to the grid
@@ -51,6 +56,39 @@ last_solar_input_update = datetime.now()
 
 # know properties that are reported as reference
 property_set = {'electricLevel', 'outputPackPower', 'outputLimit', 'packInputPower', 'buzzerSwitch', 'inputLimit', 'masterSwitch', 'packNum', 'wifiState', 'socSet', 'hubState', 'remainOutTime', 'remainInputTime', 'solarInputPower', 'inverseMaxPower', 'outputHomePower', 'packState'}
+
+def on_solarflow_solarinput(msg):
+    #log.info(f'Received solarInput: {msg}')
+    global last_solar_input_update
+    global property_set
+
+    now = datetime.now()
+    diff = now - last_solar_input_update
+    seconds = diff.total_seconds()
+    if seconds > 120:
+        #if we haven't received any update on solarInputPower we assume it's not producing
+        log.info(f'No solarInputPower measurement received for {seconds}s')
+        solarflow_values.pop(0)
+        solarflow_values.append(0)
+    
+    if len(solarflow_values) >= sf_window:
+        solarflow_values.pop(0)
+        solarflow_values.append(int(msg))
+        last_solar_input_update = now
+
+def on_solarflow_electriclevel(msg):
+    #log.info(f'Received electricLevel: {msg}')
+    global battery
+    battery = int(msg)
+
+def on_solarflow_outputpack(msg):
+    #log.info(f'Received outputPack: {msg}')
+    global charging
+    charging = int(msg)
+
+def on_solarflow_outputhome(msg):
+    global home
+    home = int(msg)
 
 def on_solarflow_update(msg):
     global battery, charging
@@ -94,6 +132,14 @@ def on_smartmeter_update(msg):
 def on_message(client, userdata, msg):
     if msg.topic == topic_acinput:
         on_inverter_update(msg.payload.decode())
+    if msg.topic == topic_solarflow_solarinput:
+        on_solarflow_solarinput(msg.payload.decode())  
+    if msg.topic == topic_solarflow_electriclevel:
+        on_solarflow_electriclevel(msg.payload.decode()) 
+    if msg.topic == topic_solarflow_outputpack:
+        on_solarflow_outputpack(msg.payload.decode()) 
+    if msg.topic == topic_solarflow_outputhome:
+        on_solarflow_outputhome(msg.payload.decode()) 
     if msg.topic == topic_solarflow:
         on_solarflow_update(msg.payload.decode())
     if msg.topic == topic_house:
@@ -116,10 +162,15 @@ def connect_mqtt() -> mqtt_client:
 def subscribe(client: mqtt_client):
     client.subscribe(topic_house)
     client.subscribe(topic_acinput)
-    client.subscribe(topic_solarflow)
+    client.subscribe(topic_solarflow_solarinput)
+    client.subscribe(topic_solarflow_electriclevel)
+    client.subscribe(topic_solarflow_outputpack)
+    client.subscribe(topic_solarflow_outputhome)
     client.on_message = on_message
 
 def steerInverter(client: mqtt_client):
+    global home
+    global battery
     # ensure we have data to work on
     if len(smartmeter_values) == 0:
         log.warning(f'Waiting for smartmeter data to make decisions...')
@@ -169,7 +220,7 @@ def steerInverter(client: mqtt_client):
     limit = int(reduce(lambda a,b: a+b, limit_values)/len(limit_values))
 
     #log.info(f'History: Demand: {smartmeter_values}, Inverter: {inverter_values}, Solar: {solarflow_values}')
-    log.info(f'Demand: {demand}W, Solar: {solarinput}W, Inverter: {inverterinput}W, Battery: {battery}% charging: {charging}W => Limit: {limit}W - {limit_values}')
+    log.info(f'Demand: {demand}W, Solar: {solarinput}W, Inverter: {inverterinput}W, Home: {home}W, Battery: {battery}% charging: {charging}W => Limit: {limit}W - {limit_values}')
     client.publish(topic_ahoylimit,f'{limit}W')
     #log.info(f'Known properties: {property_set}')
 
