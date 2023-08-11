@@ -18,9 +18,15 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 
 ZEN_USER = os.environ.get('ZEN_USER',None)
 ZEN_PASSWD = os.environ.get('ZEN_PASSWD',None)
+MQTT_HOST = os.environ.get('MQTT_HOST',None)
+MQTT_PORT = os.environ.get('MQTT_PORT',1883)
 
 if ZEN_USER is None or ZEN_PASSWD is None:
-    log.error("No username and password environment variable set!")
+    log.error("No username and password environment variable set (environment variable ZEN_USER, ZEN_PASSWD)!")
+    sys.exit(0)
+
+if MQTT_HOST is None:
+    log.error("You need a local MQTT broker set (environment variable MQTT_HOST)!")
     sys.exit(0)
 
 ZenAuth = namedtuple("ZenAuth",["productKey","deviceKey","clientId"])
@@ -30,8 +36,8 @@ broker = 'mq.zen-iot.com'
 port = 1883
 client: mqtt_client
 
-local_broker = "192.168.1.245"
-local_port: 1883
+local_broker = MQTT_HOST
+local_port = MQTT_PORT
 local_client: mqtt_client
 auth: ZenAuth
 device_details = {}
@@ -163,7 +169,7 @@ def local_mqtt_connect():
     global local_client
     global local_port
     local_client = mqtt_client.Client(client_id="solarflow-status")
-    local_client.connect(local_broker)
+    local_client.connect(local_broker,local_port)
     local_client.on_connect = on_connect
 
 @app.route('/')

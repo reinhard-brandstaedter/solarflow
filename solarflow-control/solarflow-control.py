@@ -11,15 +11,22 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 
 SF_ACCOUNT_ID = os.environ.get('SF_ACCOUNT_ID',None)
 SF_DEVICE_ID = os.environ.get('SF_DEVICE_ID',None)
+MQTT_HOST = os.environ.get('MQTT_HOST',None)
+MQTT_PORT = os.environ.get('MQTT_PORT',1883)
 
 if SF_ACCOUNT_ID is None or SF_DEVICE_ID is None:
     log.error(f'Please set SF_ACCOUNT_ID and SF_DEVICE_ID environment variables! Exiting!')
     sys.exit()
+    
+if MQTT_HOST is None:
+    log.error("You need a local MQTT broker set (environment variable MQTT_HOST)!")
+    sys.exit(0)
 
 # our MQTT broker where we subscribe to all the telemetry data we need to steer
 # could also be an external one, e.g. fetching SolarFlow data directly from their dv-server
-broker = '192.168.1.245'
-port = 1883
+broker = MQTT_HOST
+port = MQTT_PORT
+
 topic_house = "tele/E220/SENSOR"
 topic_acinput = "inverter/HM-600/ch0/P_AC"
 topic_solarflow = f'{SF_ACCOUNT_ID}/{SF_DEVICE_ID}/state'
