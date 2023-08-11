@@ -71,6 +71,7 @@ def on_solarflow_update(msg):
             local_client.publish("solarflow-statuspage/outputPackPower",payload["properties"]["outputPackPower"])
             socketio.emit('updateSensorData', {'metric': 'outputPack', 'value': -payload["properties"]["outputPackPower"], 'date': round(time.time()*1000)})
         if "packInputPower" in payload["properties"]:
+            local_client.publish("solarflow-statuspage/packInputPower",payload["properties"]["packInputPower"])
             socketio.emit('updateSensorData', {'metric': 'outputPack', 'value': payload["properties"]["packInputPower"], 'date': round(time.time()*1000)})
         if "electricLevel" in payload["properties"]:
             local_client.publish("solarflow-statuspage/electricLevel",payload["properties"]["electricLevel"])
