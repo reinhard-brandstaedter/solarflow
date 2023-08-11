@@ -42,13 +42,11 @@ local_client: mqtt_client
 auth: ZenAuth
 device_details = {}
 
-
 # Flask SocketIO background task
 thread = None
 thread_lock = Lock()
 
 app = Flask(__name__)
-#app.config['SECRET_KEY'] = 'donsky!'
 socketio = SocketIO(app, cors_allowed_origins='*')
 
 def get_current_datetime():

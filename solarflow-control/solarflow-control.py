@@ -19,7 +19,7 @@ MQTT_PORT = os.environ.get('MQTT_PORT',1883)
 if SF_ACCOUNT_ID is None or SF_DEVICE_ID is None:
     log.error(f'Please set SF_ACCOUNT_ID and SF_DEVICE_ID environment variables! Exiting!')
     sys.exit()
-    
+
 if MQTT_HOST is None:
     log.error("You need a local MQTT broker set (environment variable MQTT_HOST)!")
     sys.exit(0)
@@ -66,22 +66,11 @@ property_set = {'electricLevel', 'outputPackPower', 'outputLimit', 'packInputPow
 
 def on_solarflow_solarinput(msg):
     #log.info(f'Received solarInput: {msg}')
-    global last_solar_input_update
-    global property_set
-
-    now = datetime.now()
-    diff = now - last_solar_input_update
-    seconds = diff.total_seconds()
-    if seconds > 120:
-        #if we haven't received any update on solarInputPower we assume it's not producing
-        log.info(f'No solarInputPower measurement received for {seconds}s')
-        solarflow_values.pop(0)
-        solarflow_values.append(0)
-    
+    global last_solar_input_update    
     if len(solarflow_values) >= sf_window:
         solarflow_values.pop(0)
         solarflow_values.append(int(msg))
-        last_solar_input_update = now
+        last_solar_input_update = datetime.now()
 
 def on_solarflow_electriclevel(msg):
     #log.info(f'Received electricLevel: {msg}')
@@ -100,8 +89,7 @@ def on_solarflow_outputhome(msg):
 def on_solarflow_update(msg):
     global battery, charging
     global last_solar_input_update
-    global property_set
-
+    
     now = datetime.now()
     diff = now - last_solar_input_update
     seconds = diff.total_seconds()
@@ -137,6 +125,17 @@ def on_smartmeter_update(msg):
     smartmeter_values.append(int(payload["Power"]["Power_curr"]))
 
 def on_message(client, userdata, msg):
+    global last_solar_input_update
+    if msg.topic.startswith("solarflow-status"):
+        now = datetime.now()
+        diff = now - last_solar_input_update
+        seconds = diff.total_seconds()
+        if seconds > 120:
+            #if we haven't received any update on solarInputPower we assume it's not producing
+            log.info(f'No solarInputPower measurement received for {seconds}s')
+            solarflow_values.pop(0)
+            solarflow_values.append(0)
+
     if msg.topic == topic_acinput:
         on_inverter_update(msg.payload.decode())
     if msg.topic == topic_solarflow_solarinput:
