@@ -15,6 +15,7 @@ loglevel = os.environ.get("LOG_LEVEL", "info").upper()
 FORMAT = '%(asctime)s:%(levelname)s: %(message)s'
 logging.basicConfig(stream=sys.stdout, level=loglevel, format=FORMAT)
 log = logging.getLogger(__name__)
+PROD_NAME = os.environ.get('PROD_NAME',None)
 
 SF_API_URL = "https://app.zendure.tech"
 SF_API_VERSION = "v2"
@@ -100,7 +101,8 @@ class ZendureAPI():
         devices = self.get_device_list()
         ids = []
         for dev in devices:
-            ids.append(dev["id"])
+            if dev["productName"] == f'{PROD_NAME}':
+                ids.append(dev["id"])
         return ids
 
 
