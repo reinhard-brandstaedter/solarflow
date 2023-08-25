@@ -11,14 +11,19 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 
 SF_ACCOUNT_ID = os.environ.get('SF_ACCOUNT_ID',None)
 SF_DEVICE_ID = os.environ.get('SF_DEVICE_ID',None)
+MQTT_USER = os.environ.get('MQTT_USER',None)
+MQTT_PW = os.environ.get('MQTT_PW',None)
+MQTT_HOST = os.environ.get('MQTT_HOST',None)
 
 if SF_ACCOUNT_ID is None or SF_DEVICE_ID is None:
     log.error(f'Please set SF_ACCOUNT_ID and SF_DEVICE_ID environment variables! Exiting!')
     sys.exit()
 
+if MQTT_USER is None or MQTT_PW is None:
+    log.info(f'MQTT_USER or MQTT_PW is not set, assuming authentication not needed')
+
 # our MQTT broker where we subscribe to all the telemetry data we need to steer
 # could also be an external one, e.g. fetching SolarFlow data directly from their dv-server
-broker = '192.168.1.245'
 port = 1883
 topic_house = "tele/E220/SENSOR"
 topic_acinput = "inverter/HM-600/ch0/P_AC"
@@ -102,8 +107,10 @@ def on_connect(client, userdata, flags, rc):
 
 def connect_mqtt() -> mqtt_client:
     client = mqtt_client.Client(client_id)
+    if MQTT_USER is not None and MQTT_PW is not None:
+        client.username_pw_set(MQTT_USER, MQTT_PW)
     client.on_connect = on_connect
-    client.connect(broker, port)
+    client.connect(MQTT_HOST, port)
     return client
 
 def subscribe(client: mqtt_client):
