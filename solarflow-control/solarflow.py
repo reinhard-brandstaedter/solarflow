@@ -25,8 +25,8 @@ if MQTT_USER is None or MQTT_PW is None:
 # our MQTT broker where we subscribe to all the telemetry data we need to steer
 # could also be an external one, e.g. fetching SolarFlow data directly from their dv-server
 port = 1883
-topic_house = "tele/E220/SENSOR"
-topic_acinput = "inverter/HM-600/ch0/P_AC"
+topic_house = "tele/tasmota_7B504C/SENSOR"
+topic_acinput = "shellyplusKellerSolar/events/rpc" #set to shelly value
 topic_solarflow = f'{SF_ACCOUNT_ID}/{SF_DEVICE_ID}/state'
 topic_ahoylimit = "inverter/ctrl/limit/0"
 client_id = f'subscribe-{random.randint(0, 100)}'
@@ -81,15 +81,16 @@ def on_solarflow_update(msg):
         charging = int((payload["outputPackPower"]))
 
 def on_inverter_update(msg):
-    if len(inverter_values) >= inv_window:
-        inverter_values.pop(0)
-    inverter_values.append(float(msg))
+    payload = json.loads(msg)
+    if len(smartmeter_values) >= sm_window:
+        smartmeter_values.pop(0)
+    smartmeter_values.append(int(payload["params"]["switch:0"]["apower"]))
 
 def on_smartmeter_update(msg):
     payload = json.loads(msg)
     if len(smartmeter_values) >= sm_window:
         smartmeter_values.pop(0)
-    smartmeter_values.append(int(payload["Power"]["Power_curr"]))
+    smartmeter_values.append(int(payload["MT175"]["P"]))
 
 def on_message(client, userdata, msg):
     if msg.topic == topic_acinput:
