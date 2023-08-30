@@ -1,0 +1,16 @@
+import asyncio
+from bleak import BleakClient
+
+
+address = "94:C9:60:3E:C8:E7"
+
+
+async def main(address):
+    async with BleakClient(address) as client:
+        svcs = await client.get_services()
+        print("Services:")
+        for service in svcs:
+            print(service)
+
+
+asyncio.run(main())

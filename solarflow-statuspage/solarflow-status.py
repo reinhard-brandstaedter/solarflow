@@ -131,6 +131,7 @@ def connect_mqtt(client_id) -> mqtt_client:
     global client
     client = mqtt_client.Client(client_id)
     client.username_pw_set(username="zenApp", password="oK#PCgy6OZxd")
+    client.reconnect_delay_set(min_delay=1, max_delay=120)
     client.on_connect = on_connect
     client.on_disconnect = on_disconnect
     client.connect(broker, port)
@@ -159,8 +160,15 @@ def get_auth() -> ZenAuth:
         return auth
 
 def mqtt_background_task():
-    auth = get_auth()
-    client = connect_mqtt(auth.clientId)
+    client = None
+    while client is None:
+        try:
+            auth = get_auth()
+            client = connect_mqtt(auth.clientId)
+        except:
+            log.warning("Connecting to MQTT broker failed!")
+            time.sleep(10)
+    
     subscribe(client,auth)
     client.loop_start()
 
