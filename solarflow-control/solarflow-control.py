@@ -161,6 +161,7 @@ def connect_mqtt() -> mqtt_client:
     client = mqtt_client.Client(client_id)
     if MQTT_USER is not None and MQTT_PW is not None:
         client.username_pw_set(MQTT_USER, MQTT_PW)
+
     client.on_connect = on_connect
     client.connect(broker, port)
     return client
