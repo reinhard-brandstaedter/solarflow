@@ -3,6 +3,7 @@ from bleak import BleakClient, BleakScanner
 from paho.mqtt import client as mqtt_client
 import json
 import logging
+import sys
 
 FORMAT = '%(asctime)s:%(levelname)s: %(message)s'
 logging.basicConfig(stream=sys.stdout, level="INFO", format=FORMAT)
