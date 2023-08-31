@@ -55,7 +55,7 @@ limit_values =  [0]*10
 battery = -1
 charging = 0
 home = 0
-MIN_CHARGE_LEVEL = int(os.environ.get('MIN_CHARGE_LEVEL',125))          # The amount of power that should be always reserved for charging, if available. Nothing will be fed to the house if less is produced
+MIN_CHARGE_LEVEL = int(os.environ.get('MIN_CHARGE_LEVEL',150))          # The amount of power that should be always reserved for charging, if available. Nothing will be fed to the house if less is produced
 MAX_DISCHARGE_LEVEL = int(os.environ.get('MAX_DISCHARGE_LEVEL',145))    # The maximum discharge level of the battery. Even if there is more demand it will not go beyond that
 OVERAGE_LIMIT = 15              # if we produce more than what we need we can feed that much to the grid
 
@@ -157,9 +157,9 @@ def on_message(client, userdata, msg):
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        print("Connected to MQTT Broker!")
+        log.info(f'Connected to MQTT {MQTT_HOST}:{MQTT_PORT}')
     else:
-        print("Failed to connect, return code %d\n", rc)
+        log.error(f'Failed to connect to MQTT {MQTT_HOST}:{MQTT_PORT}, return code {rc}')
 
 def connect_mqtt() -> mqtt_client:
     client = mqtt_client.Client(client_id)
@@ -219,7 +219,7 @@ def steerInverter(client: mqtt_client):
         limit = 0                                               # battery is at low stage, stop discharging
     else:
         if solarinput > 0 and solarinput > MIN_CHARGE_LEVEL:
-            limit = min(demand,solarinput - MIN_CHARGE_LEVEL + 10)   # give charging precedence
+            limit = min(demand,solarinput - MIN_CHARGE_LEVEL - 10)   # give charging precedence
         if solarinput <= MIN_CHARGE_LEVEL:                      # producing less than the minimum charge level 
             if hour <= 6 or hour >= 16:                         
                 limit = min(demand,MAX_DISCHARGE_LEVEL)         # in the morning keep using battery, in the evening start using battery
