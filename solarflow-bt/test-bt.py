@@ -31,7 +31,7 @@ def on_connect(client, userdata, flags, rc):
 async def local_mqtt_connect():
     global local_client
     global local_port
-    local_client = mqtt_client.Client(client_id="solarflow-status")
+    local_client = mqtt_client.Client(client_id="solarflow-bt")
     local_client.connect(local_broker,local_port)
     local_client.on_connect = on_connect
 
