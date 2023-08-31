@@ -41,6 +41,8 @@ def handle_rx(BleakGATTCharacteristic, data: bytearray):
 
     if "properties" in payload:
         log.info(payload["properties"])
+        # also report whole state to mqtt (nothing coming from cloud now :-)
+        local_client.publish("SKC4SpSn/5ak8yGU7/state",payload["properties"])
         if "outputHomePower" in payload["properties"]:
             local_client.publish("solarflow-statuspage/outputHomePower",payload["properties"]["outputHomePower"])
         if "solarInputPower" in payload["properties"]:
