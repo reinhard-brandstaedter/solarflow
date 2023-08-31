@@ -42,15 +42,15 @@ def handle_rx(BleakGATTCharacteristic, data: bytearray):
     if "properties" in payload:
         log.info(payload["properties"])
         if "outputHomePower" in payload["properties"]:
-            local_client.publish("solarflow-bt/outputHomePower",payload["properties"]["outputHomePower"])
+            local_client.publish("solarflow-statuspage/outputHomePower",payload["properties"]["outputHomePower"])
         if "solarInputPower" in payload["properties"]:
-            local_client.publish("solarflow-bt/solarInputPower",payload["properties"]["solarInputPower"])
+            local_client.publish("solarflow-statuspage/solarInputPower",payload["properties"]["solarInputPower"])
         if "outputPackPower" in payload["properties"]:
-            local_client.publish("solarflow-bt/outputPackPower",payload["properties"]["outputPackPower"])
+            local_client.publish("solarflow-statuspage/outputPackPower",payload["properties"]["outputPackPower"])
         if "packInputPower" in payload["properties"]:
-            local_client.publish("solarflow-bt/packInputPower",payload["properties"]["packInputPower"])
+            local_client.publish("solarflow-statuspage/packInputPower",payload["properties"]["packInputPower"])
         if "electricLevel" in payload["properties"]:
-            local_client.publish("solarflow-bt/electricLevel",payload["properties"]["electricLevel"])
+            local_client.publish("solarflow-statuspage/electricLevel",payload["properties"]["electricLevel"])
     print(f'{data.decode("utf8")}')
 
 async def main(address):
