@@ -36,7 +36,7 @@ async def local_mqtt_connect():
     local_client.connect(local_broker,local_port)
     local_client.on_connect = on_connect
 
-async def set_IoT_Url(client):
+def set_IoT_Url(client):
     global local_client
     char = "0000c304-0000-1000-8000-00805f9b34fb"
     #cmd1 = '{"iotUrl":"192.168.1.245","messageId":"1002","method":"token","password":"Brr2020!6","ssid":"IoT","timeZone":"GMT+08:00","token":"7Y97Vj08nE9AEPX6"}'
@@ -49,7 +49,7 @@ async def set_IoT_Url(client):
     try:
         b = bytearray()
         b.extend(map(ord, cmd1))
-        await client.write_gatt_char(char,b,response=False)
+        client.write_gatt_char(char,b,response=False)
     except Exception:
         log.exception("Setting reporting URL failed")
 
@@ -57,12 +57,11 @@ async def set_IoT_Url(client):
     try:
         b = bytearray()
         b.extend(map(ord, cmd2))
-        await client.write_gatt_char(char,b,response=False)
+        client.write_gatt_char(char,b,response=False)
     except Exception:
         log.exception("Setting WiFi Mode failed")
 
 
-    time.time.sleep(20)
     local_client.publish("iot/73bkTV/5ak8yGU7/register/replay",reply)
     
 
