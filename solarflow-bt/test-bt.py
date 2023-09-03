@@ -44,7 +44,7 @@ async def set_IoT_Url(client):
     try:
         b = bytearray()
         b.extend(map(ord, cmd1))
-        await client.write_gatt_char(char,b,response=True)
+        await client.write_gatt_char(char,b,response=False)
     except:
         log.error("Setting reporting URL failed")
 
