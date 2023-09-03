@@ -98,7 +98,7 @@ async def main(address):
 
         await local_mqtt_connect()
 
-        await set_IoT_Url(client)
+        #await set_IoT_Url(client)
 
         while True:
             char = "0000c305-0000-1000-8000-00805f9b34fb"
