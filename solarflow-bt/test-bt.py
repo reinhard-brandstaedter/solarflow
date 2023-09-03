@@ -45,15 +45,15 @@ async def set_IoT_Url(client):
         b = bytearray()
         b.extend(map(ord, cmd1))
         await client.write_gatt_char(char,b,response=False)
-    except:
-        log.error("Setting reporting URL failed")
+    except Exception:
+        log.exception("Setting reporting URL failed")
 
     try:
         b = bytearray()
         b.extend(map(ord, cmd2))
         await client.write_gatt_char(char,b,response=False)
-    except:
-        log.error("Setting reporting URL failed")
+    except Exception:
+        log.exception("Setting WiFi Mode failed")
 
 
 def handle_rx(BleakGATTCharacteristic, data: bytearray):
