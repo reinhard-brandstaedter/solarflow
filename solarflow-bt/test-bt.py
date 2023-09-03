@@ -42,7 +42,10 @@ async def set_IoT_Url(client):
 
     b = bytearray()
     b.extend(map(ord, cmd))
-    await client.write_gatt_char(char,b,response=False)
+    try:
+        await client.write_gatt_char(char,b,response=False)
+    except:
+        log.error("Setting reporting URL failed")
 
 def handle_rx(BleakGATTCharacteristic, data: bytearray):
     payload = json.loads(data.decode("utf8"))
