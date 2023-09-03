@@ -62,7 +62,7 @@ async def set_IoT_Url(client):
         log.exception("Setting WiFi Mode failed")
 
 
-    time.sleep(20)
+    time.time.sleep(20)
     local_client.publish("iot/73bkTV/5ak8yGU7/register/replay",reply)
     
 
