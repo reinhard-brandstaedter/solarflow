@@ -37,8 +37,7 @@ async def local_mqtt_connect():
 
 async def set_IoT_Url(client):
     char = "0000c304-0000-1000-8000-00805f9b34fb"
-    cmd1 = '{"iotUrl":"192.168.1.234","messageId":"1002"}'
-    #cmd1 = '{"iotUrl":"192.168.1.234","messageId":"1002","method":"token","password":"Brr2020!6","ssid":"IoT","timeZone":"GMT+08:00","token":"abcdef"}'
+    cmd1 = '{"iotUrl":"192.168.1.234","messageId":"1002","method":"token","password":"Brr2020!6","ssid":"IoT","timeZone":"GMT+08:00","token":"abcdef"}'
     cmd2 = '{"messageId":"1003","method":"station"}'
     
     try:
