@@ -37,8 +37,8 @@ async def local_mqtt_connect():
 
 async def set_IoT_Url(client):
     char = "0000c304-0000-1000-8000-00805f9b34fb"
-    cmd = "{'iotUrl':'192.168.1.234'}"
-    #cmd = "{'iotUrl':'192.168.1.234','messageId':'1002','method':'token','password':'Brr2020!6','ssid':'IoT','timeZone':'GMT+08:00','token':''}"
+    #cmd = "{'iotUrl':'192.168.1.234'}"
+    cmd = "{'iotUrl':'192.168.1.234','messageId':'1002','method':'token','password':'Brr2020!6','ssid':'RedChili','timeZone':'GMT+08:00','token':''}"
 
     b = bytearray()
     b.extend(map(ord, cmd))
@@ -49,9 +49,9 @@ async def set_IoT_Url(client):
 
 def handle_rx(BleakGATTCharacteristic, data: bytearray):
     payload = json.loads(data.decode("utf8"))
+    log.info(payload)
 
     if "properties" in payload:
-        log.info(payload["properties"])
         props = payload["properties"]
 
         for prop, val in props.items():
