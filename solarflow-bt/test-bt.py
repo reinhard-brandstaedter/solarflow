@@ -5,7 +5,7 @@ import json
 import logging
 import sys
 import os
-import time
+from time import time 
 
 FORMAT = '%(asctime)s:%(levelname)s: %(message)s'
 logging.basicConfig(stream=sys.stdout, level="INFO", format=FORMAT)
@@ -44,7 +44,7 @@ async def set_IoT_Url(client):
 
     cmd2 = '{"messageId":"1003","method":"station"}'
 
-    reply = '{"messageId":123,"params":{"token":"abcdefgh","result":0}}'
+    reply = '{"messageId":123,"timestamp":'+int(time)+',"params":{"token":"abcdefgh","result":0}}'
     
     try:
         b = bytearray()
