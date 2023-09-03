@@ -5,6 +5,7 @@ import json
 import logging
 import sys
 import os
+import time
 
 FORMAT = '%(asctime)s:%(levelname)s: %(message)s'
 logging.basicConfig(stream=sys.stdout, level="INFO", format=FORMAT)
@@ -37,7 +38,7 @@ async def local_mqtt_connect():
 
 async def set_IoT_Url(client):
     char = "0000c304-0000-1000-8000-00805f9b34fb"
-    cmd1 = '{"iotUrl":"192.168.1.245","messageId":"1002","method":"token","password":"Brr2020!6","ssid":"IoT","timeZone":"GMT+08:00","token":"abcdef"}'
+    cmd1 = '{"iotUrl":"mq.zen-iot.com","messageId":"1002","method":"token","password":"Brr2020!6","ssid":"IoT","timeZone":"GMT+08:00","token":"7Y97Vj08nE9AEPX6"}'
     cmd2 = '{"messageId":"1003","method":"station"}'
     
     try:
@@ -89,7 +90,9 @@ async def main(address):
 
         await local_mqtt_connect()
 
-        #await set_IoT_Url(client)
+        await set_IoT_Url(client)
+
+        time.sleep(5)
 
         while True:
             char = "0000c305-0000-1000-8000-00805f9b34fb"
