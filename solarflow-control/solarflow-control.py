@@ -39,7 +39,8 @@ topic_solarflow_solarinput = "solarflow-statuspage/solarInputPower"
 topic_solarflow_electriclevel = "solarflow-statuspage/electricLevel"
 topic_solarflow_outputpack = "solarflow-statuspage/outputPackPower"
 topic_solarflow_outputhome = "solarflow-statuspage/outputHomePower"
-topic_ahoylimit = "inverter/ctrl/limit/0"
+#topic_ahoylimit = "inverter/ctrl/limit/0"
+topic_limit_non_persistent = "solar/116491132532/cmd/limit_nonpersistent_absolute"
 client_id = f'subscribe-{random.randint(0, 100)}'
 
 # sliding average windows for telemetry data, to remove spikes and drops
@@ -227,7 +228,7 @@ def steerInverter(client: mqtt_client):
 
     #log.info(f'History: Demand: {smartmeter_values}, Inverter: {inverter_values}, Solar: {solarflow_values}')
     log.info(f'Demand: {demand}W, Solar: {solarinput}W, Inverter: {inverterinput}W, Home: {home}W, Battery: {battery}% charging: {charging}W => Limit: {limit}W - {limit_values}')
-    client.publish(topic_ahoylimit,f'{limit}W')
+    client.publish(topic_limit_non_persistent,f'{limit}W')
     #log.info(f'Known properties: {property_set}')
 
 def run():

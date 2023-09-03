@@ -35,6 +35,14 @@ async def local_mqtt_connect():
     local_client.connect(local_broker,local_port)
     local_client.on_connect = on_connect
 
+async def set_IoT_Url(client):
+    char = "0000c3-0400-0010-0080-0000805f9b34fb"
+    cmd = "{'iotUrl':'192.168.1.234'}"
+    #cmd = "{'iotUrl':'192.168.1.234','messageId':'1002','method':'token','password':'Brr2020!6','ssid':'IoT','timeZone':'GMT+08:00','token':''}"
+
+    b = bytearray()
+    b.extend(map(ord, cmd))
+    await client.write_gatt_char(char,b,response=False)
 
 def handle_rx(BleakGATTCharacteristic, data: bytearray):
     payload = json.loads(data.decode("utf8"))
@@ -48,18 +56,6 @@ def handle_rx(BleakGATTCharacteristic, data: bytearray):
 
         # also report whole state to mqtt (nothing coming from cloud now :-)
         local_client.publish("SKC4SpSn/5ak8yGU7/state",json.dumps(payload["properties"]))
-        '''
-        if "outputHomePower" in payload["properties"]:
-            local_client.publish("solarflow-statuspage/outputHomePower",payload["properties"]["outputHomePower"])
-        if "solarInputPower" in payload["properties"]:
-            local_client.publish("solarflow-statuspage/solarInputPower",payload["properties"]["solarInputPower"])
-        if "outputPackPower" in payload["properties"]:
-            local_client.publish("solarflow-statuspage/outputPackPower",payload["properties"]["outputPackPower"])
-        if "packInputPower" in payload["properties"]:
-            local_client.publish("solarflow-statuspage/packInputPower",payload["properties"]["packInputPower"])
-        if "electricLevel" in payload["properties"]:
-            local_client.publish("solarflow-statuspage/electricLevel",payload["properties"]["electricLevel"])
-        '''
 
 async def main(address):
 
@@ -72,13 +68,15 @@ async def main(address):
 
     async with BleakClient(device) as client:
         svcs = client.services
-        print("Services:")
+        log.info("Services:")
         for service in svcs:
-            print(service)
+            log.info(service)
 
         #Characteristic:  0000c30500001000800000805f9b34fb
 
         await local_mqtt_connect()
+
+        await set_IoT_Url(client)
 
         while True:
             char = "0000c305-0000-1000-8000-00805f9b34fb"
