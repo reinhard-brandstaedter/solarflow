@@ -37,9 +37,14 @@ async def local_mqtt_connect():
     local_client.on_connect = on_connect
 
 async def set_IoT_Url(client):
+    global local_client
     char = "0000c304-0000-1000-8000-00805f9b34fb"
-    cmd1 = '{"iotUrl":"192.168.1.245","messageId":"1002","method":"token","password":"Brr2020!6","ssid":"IoT","timeZone":"GMT+08:00","token":"7Y97Vj08nE9AEPX6"}'
+    #cmd1 = '{"iotUrl":"192.168.1.245","messageId":"1002","method":"token","password":"Brr2020!6","ssid":"IoT","timeZone":"GMT+08:00","token":"7Y97Vj08nE9AEPX6"}'
+    cmd1 = '{"iotUrl":"192.168.1.245","messageId":"1002","method":"token","password":"Brr2020!6","ssid":"IoT","timeZone":"GMT+08:00","token":"abcdefgh"}'
+
     cmd2 = '{"messageId":"1003","method":"station"}'
+
+    reply = '{"messageId":123,"timestamp":1693753343,"params":{"token":"7Y97Vj08nE9AEPX6","result":0}}'
     
     try:
         b = bytearray()
@@ -55,6 +60,8 @@ async def set_IoT_Url(client):
         await client.write_gatt_char(char,b,response=False)
     except Exception:
         log.exception("Setting WiFi Mode failed")
+
+    local_client.publish("iot/73bkTV/5ak8yGU7/register/replay",reply)
     
 
 
