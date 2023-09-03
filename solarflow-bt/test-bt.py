@@ -44,7 +44,7 @@ async def set_IoT_Url(client):
 
     cmd2 = '{"messageId":"1003","method":"station"}'
 
-    reply = '{"messageId":123,"timestamp":1693753343,"params":{"token":"7Y97Vj08nE9AEPX6","result":0}}'
+    reply = '{"messageId":123,"params":{"token":"abcdefgh","result":0}}'
     
     try:
         b = bytearray()
