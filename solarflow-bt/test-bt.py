@@ -38,14 +38,23 @@ async def local_mqtt_connect():
 async def set_IoT_Url(client):
     char = "0000c304-0000-1000-8000-00805f9b34fb"
     #cmd = "{'iotUrl':'192.168.1.234'}"
-    cmd = "{'iotUrl':'192.168.1.234','messageId':'1002','method':'token','password':'Brr2020!6','ssid':'RedChili','timeZone':'GMT+08:00','token':''}"
-
-    b = bytearray()
-    b.extend(map(ord, cmd))
+    cmd1 = "{'iotUrl':'192.168.1.234','messageId':'1002','method':'token','password':'Brr2020!6','ssid':'RedChili','timeZone':'GMT+08:00','token':'abcdef'}"
+    cmd2 = {"messageId":"1003","method":"station"}
+    
     try:
+        b = bytearray()
+        b.extend(map(ord, cmd1))
+        await client.write_gatt_char(char,b,response=True)
+    except:
+        log.error("Setting reporting URL failed")
+
+    try:
+        b = bytearray()
+        b.extend(map(ord, cmd2))
         await client.write_gatt_char(char,b,response=False)
     except:
         log.error("Setting reporting URL failed")
+
 
 def handle_rx(BleakGATTCharacteristic, data: bytearray):
     payload = json.loads(data.decode("utf8"))
