@@ -1,3 +1,11 @@
+> [!NOTE]
+> 
+> I have moved the individual parts of this collection to their own repositories to make develpoment easier. This repo will stay here but please use the other repos for current versions:
+> 
+> - [Solarflow Control](https://github.com/reinhard-brandstaedter/solarflow-control)
+> - [Solarflow Statuspage](https://github.com/reinhard-brandstaedter/solarflow-statuspage)
+> - [Solarflow Bluetooth Manager](https://github.com/reinhard-brandstaedter/solarflow-bt-manager)
+
 # Solarflow Tools and Integrations
 
 - [getting metrics into Homeassistant for automation purposes](controlling_with_homeassistant.md)
